@@ -98,7 +98,7 @@ StimSettings StimControl::getSettings() {
 void StimControl::sendData() {
 	std::cout << "***********SENDING DATA**********\n";
 	auto s = getSettings();
-	printParams(getSettings());
+	printParams(s);
 	serial.writeBytes((unsigned char *)&s, sizeof(StimSettings));
 }
 
@@ -224,8 +224,8 @@ void StimControl::printParams(StimSettings settings) {
 	std::cout << "Device is: " << devString << " with settings:\n"
 	<< "Input pin: " << static_cast<int>(settings.inputPin) <<
 	"\nOutput pin: " << static_cast<int>(settings.outputPin) <<
-	"\nStart time (secs): " << static_cast<int>(settings.startTime) <<
-	"\nStop time (secs): " << static_cast<int>(settings.stopTime) <<
-	"\nStim on duration (msecs): " << static_cast<int>(settings.stimOnTime) <<
-	"\nStim off duration (msecs): " << static_cast<int>(settings.stimOffTime) << std::endl;
+	"\nStart time (s): " << static_cast<int>(settings.startTime) <<
+	"\nStop time (s): " << static_cast<int>(settings.stopTime) <<
+	"\nStim on duration (ms): " << static_cast<int>(settings.stimOnTime) <<
+	"\nStim off duration (ms): " << static_cast<int>(settings.stimOffTime) << std::endl;
 }
