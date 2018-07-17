@@ -141,8 +141,10 @@ void StimControl::setupDevice() {
 	auto editor = static_cast<StimControlEditor*>(getEditor());
 	int selected = editor->deviceId;
 	if ( selected >= 0 ) {
+		std::cout << "Initializing device... " << std::endl;
 		serial.setup(selected, baudrate);
 		deviceInitialized(true);
+		std::cout << "Device successfully initialized" << std::endl;
 	}
 	else
 		CoreServices::sendStatusMessage("Select a device first.");
