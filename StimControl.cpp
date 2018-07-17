@@ -31,6 +31,7 @@ void StimControl::startRecording() {
 	printParams(getSettings());
 	setPinStates();
 	setStartAndStopTimes();
+	setStimDurations();
 	sendData();
 	serial.flush(true, true);
 }
