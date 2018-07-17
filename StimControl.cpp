@@ -194,9 +194,9 @@ void StimControl::loadCustomParametersFromXml() {
 		if ( paramXml->hasAttribute("StopTime") )
 			m_settings.stopTime = static_cast<uint16_t>(paramXml->getIntAttribute("StopTime"));
 		if ( paramXml->hasAttribute("StimStartTime") )
-			m_settings.stopTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStartTime"));
+			m_settings.stimOnTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStartTime"));
 		if ( paramXml->hasAttribute("StimStopTime") )
-			m_settings.stopTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStopTime"));
+			m_settings.stimOffTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStopTime"));
 	}
 	auto editor = static_cast<StimControlEditor*>(getEditor());
 	editor->setStartTime(m_settings.startTime);
@@ -215,11 +215,9 @@ void StimControl::loadCustomParametersFromXml() {
 			setDeviceString(device);
 		}
 	}
-	// printParams(); // WORKS HERE - ie ALL THE SETTINGS IN THE XML FILE ARE LOADED
 	setPinStates();
 	setStartAndStopTimes();
 	setStimDurations();
-	// sendData();
 }
 
 void StimControl::printParams(StimSettings settings) {
@@ -227,7 +225,7 @@ void StimControl::printParams(StimSettings settings) {
 	<< "Input pin: " << static_cast<int>(settings.inputPin) <<
 	"\nOutput pin: " << static_cast<int>(settings.outputPin) <<
 	"\nStart time (secs): " << static_cast<int>(settings.startTime) <<
-	"\nStop time (secs): " << static_cast<int>(settings.stopTime) << 
+	"\nStop time (secs): " << static_cast<int>(settings.stopTime) <<
 	"\nStim on duration (msecs): " << static_cast<int>(settings.stimOnTime) <<
 	"\nStim off duration (msecs): " << static_cast<int>(settings.stimOffTime) << std::endl;
 }

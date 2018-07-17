@@ -58,65 +58,65 @@ StimControlEditor::StimControlEditor(GenericProcessor * proc, bool useDefaultPar
 
 	addAndMakeVisible(outputChannelPicker);
 
+	font.setHeight(11);
+
 	startTimeEditor = new TextEditor(String("StartTime"));
-	startTimeEditor->setBounds(120,55,55,20);
+	startTimeEditor->setBounds(120, 30, 55, 20);
 	startTimeEditor->setText(String("0"));
 	addAndMakeVisible(startTimeEditor);
 
-	stopTimeEditor = new TextEditor(String("StopTime"));
-	stopTimeEditor->setBounds(120,80,55,20);
-	stopTimeEditor->setText(String("0"));
-	addAndMakeVisible(stopTimeEditor);
-
-	applyStimButton = new ToggleButton("Apply when recording");
-	applyStimButton->setBounds(120, 105, 55, 20); //  smaller than this and the JUCE graphics_context goes mental
-	applyStimButton->setToggleState(true, dontSendNotification);
-	applyStimButton->addListener(this);
-	addAndMakeVisible(applyStimButton);
-
-	font.setHeight(11);
-
-	startLabel = new Label("StartTime", "Start (secs)");
-	startLabel->setBounds(180, 55, 80, 20);
+	startLabel = new Label("StartTime", "Start (s)");
+	startLabel->setBounds(180, 30, 80, 20);
 	startLabel->setFont(font);
 	startLabel->setEditable (false, false, false);
-	startLabel->setJustificationType(Justification::centred);
+	startLabel->setJustificationType(Justification::centredLeft);
 	startLabel->setColour (TextEditor::textColourId, Colours::grey);
 	addAndMakeVisible(startLabel);
 
-	stopLabel = new Label("StopTime", "Stop (secs)");
-	stopLabel->setBounds(180, 80, 80, 20);
+	stopTimeEditor = new TextEditor(String("StopTime"));
+	stopTimeEditor->setBounds(120, 55, 55, 20);
+	stopTimeEditor->setText(String("0"));
+	addAndMakeVisible(stopTimeEditor);
+
+	stopLabel = new Label("StopTime", "Stop (s)");
+	stopLabel->setBounds(180, 55, 80, 20);
 	stopLabel->setFont(font);
 	stopLabel->setEditable (false, false, false);
-	stopLabel->setJustificationType(Justification::centred);
+	stopLabel->setJustificationType(Justification::centredLeft);
 	stopLabel->setColour (TextEditor::textColourId, Colours::grey);
 	addAndMakeVisible(stopLabel);
 
 	stimOnTime = new TextEditor(String("StimOnDuration"));
-	stimOnTime->setBounds(265, 55, 55, 20);
+	stimOnTime->setBounds(120, 80, 55, 20);
 	stimOnTime->setText(String("10"));
 	addAndMakeVisible(stimOnTime);
 
-	stimOffTime = new TextEditor(String("StimOffDuration"));
-	stimOffTime->setBounds(265, 80, 55, 20);
-	stimOffTime->setText(String("150"));
-	addAndMakeVisible(stimOffTime);
-
-	stimOnTimeLabel = new Label("stimOnDuration", "Stim on (msecs)");
-	stimOnTimeLabel->setBounds(340, 55, 80, 20);
+	stimOnTimeLabel = new Label("stimOnDuration", "Stim on (ms)");
+	stimOnTimeLabel->setBounds(180, 80, 80, 20);
 	stimOnTimeLabel->setFont(font);
 	stimOnTimeLabel->setEditable (false, false, false);
-	stimOnTimeLabel->setJustificationType(Justification::centred);
+	stimOnTimeLabel->setJustificationType(Justification::centredLeft);
 	stimOnTimeLabel->setColour (TextEditor::textColourId, Colours::grey);
 	addAndMakeVisible(stimOnTimeLabel);
 
-	stimOffTimeLabel = new Label("stimOffDuration", "Stim off (msecs)");
-	stimOffTimeLabel->setBounds(340, 80, 80, 20);
+	stimOffTime = new TextEditor(String("StimOffDuration"));
+	stimOffTime->setBounds(120, 105, 55, 20);
+	stimOffTime->setText(String("150"));
+	addAndMakeVisible(stimOffTime);
+
+	stimOffTimeLabel = new Label("stimOffDuration", "Stim off (ms)");
+	stimOffTimeLabel->setBounds(180, 105, 80, 20);
 	stimOffTimeLabel->setFont(font);
 	stimOffTimeLabel->setEditable (false, false, false);
-	stimOffTimeLabel->setJustificationType(Justification::centred);
+	stimOffTimeLabel->setJustificationType(Justification::centredLeft);
 	stimOffTimeLabel->setColour (TextEditor::textColourId, Colours::grey);
 	addAndMakeVisible(stimOffTimeLabel);
+
+	applyStimButton = new ToggleButton("Apply when recording");
+	applyStimButton->setBounds(265, 105, 55, 20); //  smaller than this and the JUCE graphics_context goes mental
+	applyStimButton->setToggleState(true, dontSendNotification);
+	applyStimButton->addListener(this);
+	addAndMakeVisible(applyStimButton);
 
 
 }
