@@ -40,8 +40,8 @@ void StimControl::stopRecording() {
 	m_settings.hasData = false;
 	sendData();
 	serial.flush(true, true);
-	serial.close();
-	deviceInitialized(false);
+	// serial.close();
+	// deviceInitialized(false);
 
 }
 
