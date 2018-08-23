@@ -26,7 +26,7 @@ private:
 	int outputChannel;
 	int gateChannel;
 	std::unique_ptr<juce::int64> initialTimeStamp = nullptr;
-	unsigned int baudrate = 57600;
+	unsigned int baudrate = 115200;
 	ofSerial serial;
 	StimSettings m_settings;
 	std::string devString;
