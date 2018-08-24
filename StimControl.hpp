@@ -10,8 +10,8 @@ struct __attribute__ ((packed)) StimSettings {
 	uint16_t outputPin = 0;
 	uint16_t startTime = 0;
 	uint16_t stopTime = 0;
-	uint16_t stimOnTime = 10;
-	uint16_t stimOffTime = 150;
+	uint16_t stimOnTime = 0;
+	uint16_t stimOffTime = 0;
 	bool hasData = false;
 };
 
