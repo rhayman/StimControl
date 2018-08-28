@@ -34,7 +34,7 @@ void StimControl::startRecording() {
 	setStimDurations();
 	sendData();
 	serial.flush(true, true);
-	ofs.open(out_stream_file, std::ofstream::out);
+	ofs.open(out_stream_file, std::ofstream::out | std::ofstream::trunc);
 }
 
 void StimControl::stopRecording() {
