@@ -60,6 +60,10 @@ void StimControl::handleEvent(const EventChannel * eventInfo, const MidiMessage 
 		const int eventId = ttl->getState() ? 1 : 0;
 		const int eventChannel = ttl->getChannel();
 
+		const juce::int64 ts = ttl->getTimestamp(message);
+
+		ofs << eventId << "\t" << ts << std::endl;
+
 		if ( eventChannel == gateChannel ) {
 			if ( eventId == 1 )
 				state = true;
@@ -67,7 +71,6 @@ void StimControl::handleEvent(const EventChannel * eventInfo, const MidiMessage 
 				state = false;
 			if ( state ) {
 				if ( inputChannel == -1 || eventChannel == inputChannel ) {
-					juce::int64 ts = ttl->getTimestamp(message);
 					int64_t ts_std = static_cast<int64_t>(ts);
 					if ( eventId == 0 ) {
 						// low event received
