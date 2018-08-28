@@ -71,11 +71,11 @@ void StimControl::handleEvent(const EventChannel * eventInfo, const MidiMessage 
 					int64_t ts_std = static_cast<int64_t>(ts);
 					if ( eventId == 0 ) {
 						// low event received
-						ofs << "0\t" << ts_std << std::endl;
+						ofs << "0\t" << ts << std::endl;
 					}
 					else {
 						// high signal received
-						ofs << "1\t" << ts_std << std::endl;
+						ofs << "1\t" << ts << std::endl;
 					}
 				}
 			}
