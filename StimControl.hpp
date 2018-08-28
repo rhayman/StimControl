@@ -31,6 +31,8 @@ private:
 	StimSettings m_settings;
 	std::string devString;
 	void deviceInitialized(bool);
+	std::string out_stream_file{"/home/robin/Dropbox/Science/Recordings/OpenEphys/testing/timestamps.txt"};
+	std::ofstream ofs;
 public:
 	StimControl();
 	~StimControl();

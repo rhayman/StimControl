@@ -34,12 +34,14 @@ void StimControl::startRecording() {
 	setStimDurations();
 	sendData();
 	serial.flush(true, true);
+	ofs.open(out_stream_file, std::ofstream::out);
 }
 
 void StimControl::stopRecording() {
 	m_settings.hasData = false;
 	sendData();
 	serial.flush(true, true);
+	ofs.close();
 	// serial.close();
 	// deviceInitialized(false);
 
@@ -65,11 +67,15 @@ void StimControl::handleEvent(const EventChannel * eventInfo, const MidiMessage 
 				state = false;
 			if ( state ) {
 				if ( inputChannel == -1 || eventChannel == inputChannel ) {
+					juce::int64 ts = ttl->getTimestamp(message);
+					std::int_64 ts_std(ts);
 					if ( eventId == 0 ) {
-						// low signal received
+						// low event received
+						ofs << "0\t" << ts_std << std;;endl;
 					}
 					else {
 						// high signal received
+						ofs << "1\t" << ts_std << std;;endl;
 					}
 				}
 			}
