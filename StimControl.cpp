@@ -27,23 +27,19 @@ void StimControl::startRecording() {
 		auto s = getDeviceString();
 		setupDevice(s);
 	}
-	std::cout << "Started recording with StimControl like so:" << std::endl;
-	printParams(getSettings());
 	setPinStates();
 	setStartAndStopTimes();
 	setStimDurations();
 	sendData();
 	serial.flush(true, true);
-	ofs.open(out_stream_file, std::ofstream::out | std::ofstream::trunc);
+	// ofs.open(out_stream_file, std::ofstream::out | std::ofstream::trunc);
 }
 
 void StimControl::stopRecording() {
 	m_settings.hasData = false;
 	sendData();
 	serial.flush(true, true);
-	ofs.close();
-	// serial.close();
-	// deviceInitialized(false);
+	// ofs.close();
 
 }
 
@@ -118,8 +114,8 @@ void StimControl::setPinStates() {
 	auto editor = static_cast<StimControlEditor*>(getEditor());
 	int inputPin = editor->getInputPin();
 	int outputPin = editor->getOutputPin();
-	m_settings.inputPin = static_cast<uint16_t>(inputPin);
-	m_settings.outputPin = static_cast<uint16_t>(outputPin);
+	m_settings.inputPin = static_cast<unsigned long>(inputPin);
+	m_settings.outputPin = static_cast<unsigned long>(outputPin);
 	m_settings.hasData = true;
 }
 
@@ -127,8 +123,8 @@ void StimControl::setStartAndStopTimes() {
 	auto editor = static_cast<StimControlEditor*>(getEditor());
 	int startTime = editor->getStartTime();
 	int stopTime = editor->getStopTime();
-	m_settings.startTime = static_cast<uint16_t>(startTime);
-	m_settings.stopTime = static_cast<uint16_t>(stopTime);
+	m_settings.startTime = static_cast<unsigned long>(startTime);
+	m_settings.stopTime = static_cast<unsigned long>(stopTime);
 	m_settings.hasData = true;
 }
 
@@ -136,8 +132,8 @@ void StimControl::setStimDurations() {
 	auto editor = static_cast<StimControlEditor*>(getEditor());
 	int stimOnDuration = editor->getStimOnTime();
 	int stimOffDuration = editor->getStimOffTime();
-	m_settings.stimOnTime = static_cast<uint16_t>(stimOnDuration);
-	m_settings.stimOffTime = static_cast<uint16_t>(stimOffDuration);
+	m_settings.stimOnTime = static_cast<unsigned long>(stimOnDuration);
+	m_settings.stimOffTime = static_cast<unsigned long>(stimOffDuration);
 	m_settings.hasData = true;
 }
 
@@ -200,17 +196,17 @@ void StimControl::loadCustomParametersFromXml() {
 	forEachXmlChildElementWithTagName(*parametersAsXml, paramXml, "Parameters")
 	{
 		if ( paramXml->hasAttribute("InputPin") )
-			m_settings.inputPin = static_cast<uint16_t>(paramXml->getIntAttribute("InputPin"));
+			m_settings.inputPin = static_cast<unsigned long>(paramXml->getIntAttribute("InputPin"));
 		if ( paramXml->hasAttribute("OutputPin") )
-			m_settings.outputPin = static_cast<uint16_t>(paramXml->getIntAttribute("OutputPin"));
+			m_settings.outputPin = static_cast<unsigned long>(paramXml->getIntAttribute("OutputPin"));
 		if ( paramXml->hasAttribute("StartTime") )
-			m_settings.startTime = static_cast<uint16_t>(paramXml->getIntAttribute("StartTime"));
+			m_settings.startTime = static_cast<unsigned long>(paramXml->getIntAttribute("StartTime"));
 		if ( paramXml->hasAttribute("StopTime") )
-			m_settings.stopTime = static_cast<uint16_t>(paramXml->getIntAttribute("StopTime"));
+			m_settings.stopTime = static_cast<unsigned long>(paramXml->getIntAttribute("StopTime"));
 		if ( paramXml->hasAttribute("StimStartTime") )
-			m_settings.stimOnTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStartTime"));
+			m_settings.stimOnTime = static_cast<unsigned long>(paramXml->getIntAttribute("StimStartTime"));
 		if ( paramXml->hasAttribute("StimStopTime") )
-			m_settings.stimOffTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStopTime"));
+			m_settings.stimOffTime = static_cast<unsigned long>(paramXml->getIntAttribute("StimStopTime"));
 	}
 	auto editor = static_cast<StimControlEditor*>(getEditor());
 	editor->setStartTime(m_settings.startTime);
