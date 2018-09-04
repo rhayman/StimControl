@@ -6,12 +6,12 @@
 #include <SerialLib.h>
 
 struct __attribute__ ((packed)) StimSettings {
-	unsigned long inputPin = 0;
-	unsigned long outputPin = 0;
-	unsigned long startTime = 0;
-	unsigned long stopTime = 0;
-	unsigned long stimOnTime = 0;
-	unsigned long stimOffTime = 0;
+	uint16_t inputPin = 0;
+	uint16_t outputPin = 0;
+	uint16_t startTime = 0;
+	uint16_t stopTime = 0;
+	uint16_t stimOnTime = 0;
+	uint16_t stimOffTime = 0;
 	bool hasData = false;
 };
 
