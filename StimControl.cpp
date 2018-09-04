@@ -181,12 +181,13 @@ std::string StimControl::getDeviceString() {
 void StimControl::saveCustomParametersToXml(XmlElement* xml) {
 	xml->setAttribute("Type", "StimControl");
 	XmlElement * paramXml = xml->createNewChildElement("Parameters");
-	paramXml->setAttribute("InputPin", static_cast<int>(m_settings.inputPin));
-	paramXml->setAttribute("OutputPin", static_cast<int>(m_settings.outputPin));
-	paramXml->setAttribute("StartTime", static_cast<int>(m_settings.startTime));
-	paramXml->setAttribute("StopTime", static_cast<int>(m_settings.stopTime));
-	paramXml->setAttribute("StimStartTime", static_cast<int>(m_settings.stimOnTime));
-	paramXml->setAttribute("StimStopTime", static_cast<int>(m_settings.stimOffTime));
+	auto current_settings = getSettings();
+	paramXml->setAttribute("InputPin", static_cast<int>(current_settings.inputPin));
+	paramXml->setAttribute("OutputPin", static_cast<int>(current_settings.outputPin));
+	paramXml->setAttribute("StartTime", static_cast<int>(current_settings.startTime));
+	paramXml->setAttribute("StopTime", static_cast<int>(current_settings.stopTime));
+	paramXml->setAttribute("StimStartTime", static_cast<int>(current_settings.stimOnTime));
+	paramXml->setAttribute("StimStopTime", static_cast<int>(current_settings.stimOffTime));
 
 	XmlElement * deviceXml = xml->createNewChildElement("Devices");
 	deviceXml->setAttribute("id", getDeviceString());
