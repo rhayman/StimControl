@@ -24,23 +24,19 @@ void StimControl::process(AudioSampleBuffer & buffer) {
 
 void StimControl::startRecording() {
 	if ( ! isDeviceInitialized() ) {
-		auto s = getDeviceString();
-		setupDevice(s);
+		setupDevice();
 	}
 	setPinStates();
 	setStartAndStopTimes();
 	setStimDurations();
 	sendData();
 	serial.flush(true, true);
-	// ofs.open(out_stream_file, std::ofstream::out | std::ofstream::trunc);
 }
 
 void StimControl::stopRecording() {
 	m_settings.hasData = false;
 	sendData();
 	serial.flush(true, true);
-	// ofs.close();
-
 }
 
 void StimControl::setParameter(int param, float value) {
@@ -104,6 +100,8 @@ StimSettings StimControl::getSettings() {
 }
 
 void StimControl::sendData() {
+	if ( ! isDeviceInitialized() )
+		setupDevice()
 	std::cout << "***********SENDING DATA**********\n";
 	auto s = getSettings();
 	printParams(s);
