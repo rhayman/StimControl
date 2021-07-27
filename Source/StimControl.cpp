@@ -100,8 +100,8 @@ StimSettings StimControl::getSettings() {
 }
 
 void StimControl::sendData() {
-	if ( ! isDeviceInitialized() )
-		setupDevice()
+	if (!isDeviceInitialized())
+		setupDevice();
 	std::cout << "***********SENDING DATA**********\n";
 	auto s = getSettings();
 	printParams(s);

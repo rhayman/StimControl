@@ -5,7 +5,15 @@
 #include <memory>
 #include <SerialLib.h>
 
-struct __attribute__ ((packed)) StimSettings {
+#ifdef __GNUC__
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#endif
+
+#ifdef _MSC_VER
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+#endif
+
+PACK(struct StimSettings {
 	uint16_t inputPin = 0;
 	uint16_t outputPin = 0;
 	uint16_t startTime = 0;
@@ -13,7 +21,7 @@ struct __attribute__ ((packed)) StimSettings {
 	uint16_t stimOnTime = 0;
 	uint16_t stimOffTime = 0;
 	bool hasData = false;
-};
+});
 
 class StimControl : public GenericProcessor
 {
