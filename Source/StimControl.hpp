@@ -28,13 +28,13 @@ class StimControl : public GenericProcessor
 private:
 	bool state;
 	bool acquisitionActive = false;
-	bool deviceSelected;
+	bool deviceSelected = false;
 	bool isDeviceSetup = false;
-	int inputChannel;
-	int outputChannel;
-	int gateChannel;
+	int inputChannel = 13;
+	int outputChannel = 13;
+	int gateChannel = 13;
 	std::unique_ptr<juce::int64> initialTimeStamp = nullptr;
-	unsigned int baudrate = 115200;
+	unsigned int baudrate = 9600;
 	ofSerial serial;
 	StimSettings m_settings;
 	std::string devString;
