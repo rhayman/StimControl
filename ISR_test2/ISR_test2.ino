@@ -6,30 +6,28 @@ unsigned int ledPin = 13;
 double clock_freq = 16000000;
 
 volatile boolean doStim = false;
-unsigned int overflowCount;
-unsigned long startStimulation_ms;
-unsigned long stopStimulation_ms;
-unsigned long timerTicks;
+unsigned long startStimulation_ms = 600*1000;
+unsigned long stopStimulation_ms = 1800*1000;
+unsigned long timerTicks = 0;
 
 // Same struct lives in the OE code and gets sent over when recording starts
 // see StimControl.h there
 struct StimSettings {
-  uint16_t inputPin;
-  uint16_t outputPin;
-  uint16_t startTime;
-  uint16_t stopTime;
-  uint16_t stimOnTime;
-  uint16_t stimOffTime;
-  bool hasData;
+  uint16_t inputPin = 13;
+  uint16_t outputPin = 13;
+  uint16_t startTime = 600;
+  uint16_t stopTime = 1800;
+  uint16_t stimOnTime = 10;
+  uint16_t stimOffTime = 150;
+  bool hasData = false;
 };
 
 void startCounting(unsigned long start_ms, unsigned long stop_ms)
 {
-//  doStim = false; // time to begin not yet... 
+  doStim = false; // time to begin not yet... 
   startStimulation_ms = start_ms; // how many 1ms counts to do before starting timers to do stimulation
   stopStimulation_ms = stop_ms;
   timerTicks = 0; // reset the interrupt counter
-  overflowCount = 0; // no overflows occurred yet...
   // no interrupts
 //  TIMSK2 = 0;
   // reset Timer 2
@@ -93,9 +91,6 @@ void setup() {
   digitalWrite(ledPin, LOW);
   digitalWrite(LED_BUILTIN, LOW);
   Serial.begin(115200);
-  TCCR1A = 0;
-  TCCR1B = 0;
-  TCNT1 = 0; // Set Timer1 counter to 0
   while ( ! Serial ) {
     ;//waiting for serial port to connect. Apparently needed for native USB port only
   }
@@ -126,8 +121,6 @@ void stopStimulation() {
 }
 
 StimSettings current_settings;
-unsigned long start_at;
-unsigned long stop_at;
 
 void loop() {
   if ( Serial.available() > 0 ) {
@@ -137,8 +130,8 @@ void loop() {
         ledPin = current_settings.outputPin;
         pinMode(ledPin, OUTPUT);
         calculateCompareTimes(current_settings.stimOffTime, current_settings.stimOnTime);
-        start_at = (unsigned long)current_settings.startTime;// * 1000;
-        stop_at = (unsigned long)current_settings.stopTime;// * 1000;
+        unsigned long start_at = (unsigned long)current_settings.startTime;// * 1000;
+        unsigned long stop_at = (unsigned long)current_settings.stopTime;// * 1000;
         startCounting(start_at*1000, stop_at*1000);
         interrupts();
       }
