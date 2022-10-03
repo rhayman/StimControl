@@ -15,7 +15,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
 	info->apiVersion = PLUGIN_API_VER;
 	info->name = "StimControl";
-	info->libVersion = 1;
+	info->libVersion = "0.1.0";
 	info->numPlugins = NUM_PLUGINS;
 }
 
@@ -24,9 +24,9 @@ extern "C" EXPORT int getPluginInfo(int index, Plugin::PluginInfo* info)
 	switch (index)
 	{
 	case 0:
-		info->type = Plugin::PLUGIN_TYPE_PROCESSOR;
+		info->type = Plugin::Type::PROCESSOR;
 		info->processor.name = "StimControl";
-		info->processor.type = Plugin::SinkProcessor;
+		info->processor.type = Processor::Type::SOURCE;
 		info->processor.creator = &(Plugin::createProcessor<StimControl>);
 		break;
 	default:

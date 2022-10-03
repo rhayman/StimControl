@@ -1,5 +1,6 @@
 #include "StimControl.hpp"
 #include "StimControlEditor.hpp"
+#include "../../../plugin-GUI/Source/Utils/Utils.h"
 
 #include <stdio.h>
 
@@ -10,7 +11,20 @@ StimControl::StimControl() : GenericProcessor("StimControl"),
 	acquisitionActive(false),
 	deviceSelected(false)
 {
-	setProcessorType(PROCESSOR_TYPE_SINK);
+	std::map<std::string, int> devices;
+	getDeviceList(devices);
+	Array<String> devs;
+	for (auto dev : devices)
+		devs.add(dev.first);
+	addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Device", "Device name", devs, 0);
+	addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Trigger", "Trigger line", arduino_lines, 0);
+	addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Gate", "Gate line", arduino_lines, 1);
+	addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Output", "Output line", arduino_lines, 1);
+	addStringParameter(Parameter::GLOBAL_SCOPE, "Start", "Start time", "0");
+	addStringParameter(Parameter::GLOBAL_SCOPE, "Stop", "Stop time", "2000");
+	addStringParameter(Parameter::GLOBAL_SCOPE, "Duration", "Stimulation duration", "10");
+	addStringParameter(Parameter::GLOBAL_SCOPE, "Interval", "Interval duration", "150");
+	addBooleanParameter(Parameter::GLOBAL_SCOPE, "Apply", "Apply during recording", true);
 }
 
 StimControl::~StimControl() {
@@ -26,113 +40,112 @@ void StimControl::startRecording() {
 	if ( ! isDeviceInitialized() ) {
 		setupDevice();
 	}
-	setPinStates();
-	setStartAndStopTimes();
-	setStimDurations();
 	sendData();
 	serial.flush(true, true);
 }
 
 void StimControl::stopRecording() {
-	m_settings.hasData = false;
+	m_settings.hasData = 0;
 	sendData();
 	serial.flush(true, true);
 }
 
-void StimControl::setParameter(int param, float value) {
-	if ( param == 0 ) {
-		return;
-	}
-}
-
-void StimControl::handleEvent(const EventChannel * eventInfo, const MidiMessage & message, int sampleNum) {
-	if ( Event::getEventType(message) == EventChannel::TTL ) {
-		TTLEventPtr ttl = TTLEvent::deserializeFromMessage(message, eventInfo);
-
-		const int eventId = ttl->getState() ? 1 : 0;
-		const int eventChannel = ttl->getChannel();
-
-		const juce::int64 ts = ttl->getTimestamp(message);
-
-		ofs << eventId << "\t" << ts << std::endl;
-
-		if ( eventChannel == gateChannel ) {
-			if ( eventId == 1 )
-				state = true;
-			else
-				state = false;
-			if ( state ) {
-				if ( inputChannel == -1 || eventChannel == inputChannel ) {
-					int64_t ts_std = static_cast<int64_t>(ts);
-					if ( eventId == 0 ) {
-						// low event received
-						ofs << "0\t" << ts << std::endl;
-						std::cout << "ts " << ts << std::endl;
-					}
-					else {
-						// high signal received
-						ofs << "1\t" << ts << std::endl;
-						std::cout << "ts " << ts << std::endl;
-					}
-				}
+void StimControl::parameterValueChanged(Parameter * param) {
+	for (auto stream : getDataStreams()) {
+        if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
+			auto this_dev = settings[stream->getStreamId()];
+			if (param->getName().equalsIgnoreCase("Device")) {
+				this_dev->name = ((CategoricalParameter*)(param))->getSelectedString().toStdString();
+				std::map<std::string, int> devices;
+				getDeviceList(devices);
+				this_dev->deviceId = devices[this_dev->name];
 			}
+			else if (param->getName().equalsIgnoreCase("Trigger")) {
+				this_dev->inputPin = ((CategoricalParameter*)(param))->getSelectedString().getIntValue();
+			}
+			else if (param->getName().equalsIgnoreCase("Gate")) {
+				// this_dev->name = ((CategoricalParameter*)(param))->getSelectedString().toStdString();
+			}
+			else if (param->getName().equalsIgnoreCase("Output")) {
+				this_dev->outputPin = ((CategoricalParameter*)(param))->getSelectedString().getIntValue();
+			}
+			else if (param->getName().equalsIgnoreCase("Start")) {
+				this_dev->startTime = (int)param->getValue();
+			}
+			else if (param->getName().equalsIgnoreCase("Stop")) {
+				this_dev->stopTime = (int)param->getValue();
+				LOGD("Stop value: ", (int)param->getValue());
+			}
+			else if (param->getName().equalsIgnoreCase("Duration")) {
+				this_dev->stimOnTime = (int)param->getValue();
+				LOGD("Duration value: ", (int)param->getValue());
+			}
+			else if (param->getName().equalsIgnoreCase("Interval")) {
+				this_dev->stimOffTime = (int)param->getValue();
+				LOGD("Interval value: ", (int)param->getValue());
+			}
+			else if (param->getName().equalsIgnoreCase("Apply")) {
+				sendData();
+			}	
 		}
 	}
 }
 
-bool StimControl::enable() {
-	acquisitionActive = true;
-	return deviceSelected;
-}
+// void StimControl::handleTTLEvent(TTLEventPtr event) {
 
-bool StimControl::disable() {
-	acquisitionActive = false;
-	return true;
+// }
+
+void StimControl::updateSettings() {
+	dataStreams.clear();
+    eventChannels.clear();
+
+	if ( getDataStreams().isEmpty() ) {
+        DataStream::Settings streamsettings{"StimControl datastream",
+                                            "Datastream for stimulation from Arduino",
+                                            "external.stimulation.arduino",
+                                            getDefaultSampleRate()};
+
+        auto stream = new DataStream(streamsettings);
+        dataStreams.add(stream);
+        dataStreams.getLast()->addProcessor(processorInfo.get());
+    }
+	settings.update(getDataStreams());
+	isEnabled = true;
 }
 
 AudioProcessorEditor * StimControl::createEditor() {
-	editor = new StimControlEditor(this, true);
-	return editor;
+	editor = std::make_unique<StimControlEditor>(this);
+	return editor.get();
 }
 
 StimSettings StimControl::getSettings() {
-	return m_settings;
+	StimSettings current_settings;
+	for (auto stream : getDataStreams()) {
+        if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
+			auto this_dev = settings[stream->getStreamId()];
+			current_settings.hasData = 1;
+			current_settings.inputPin = this_dev->inputPin;
+			current_settings.outputPin = this_dev->outputPin;
+			current_settings.startTime = this_dev->startTime;
+			current_settings.stopTime = this_dev->stopTime;
+			current_settings.stimOffTime = this_dev->stimOffTime;
+			current_settings.stimOnTime = this_dev->stimOnTime;
+		}
+	}
+	return current_settings;
 }
 
 void StimControl::sendData() {
 	if (!isDeviceInitialized())
 		setupDevice();
-	std::cout << "***********SENDING DATA**********\n";
-	auto s = getSettings();
+	CoreServices::sendStatusMessage("Sending data");
+	StimSettings s = getSettings();
 	printParams(s);
-	serial.writeBytes((unsigned char *)&s, sizeof(StimSettings));
-}
-
-void StimControl::setPinStates() {
-	auto editor = static_cast<StimControlEditor*>(getEditor());
-	int inputPin = editor->getInputPin();
-	int outputPin = editor->getOutputPin();
-	m_settings.inputPin = static_cast<uint16_t>(inputPin);
-	m_settings.outputPin = static_cast<uint16_t>(outputPin);
-	m_settings.hasData = true;
-}
-
-void StimControl::setStartAndStopTimes() {
-	auto editor = static_cast<StimControlEditor*>(getEditor());
-	int startTime = editor->getStartTime();
-	int stopTime = editor->getStopTime();
-	m_settings.startTime = static_cast<uint16_t>(startTime);
-	m_settings.stopTime = static_cast<uint16_t>(stopTime);
-	m_settings.hasData = true;
-}
-
-void StimControl::setStimDurations() {
-	auto editor = static_cast<StimControlEditor*>(getEditor());
-	int stimOnDuration = editor->getStimOnTime();
-	int stimOffDuration = editor->getStimOffTime();
-	m_settings.stimOnTime = static_cast<uint16_t>(stimOnDuration);
-	m_settings.stimOffTime = static_cast<uint16_t>(stimOffDuration);
-	m_settings.hasData = true;
+	LOGD("size of settings: ", sizeof((unsigned char*)&s));
+	LOGD("Size of StimSettings: ", sizeof(s));
+	auto result = serial.writeBytes((unsigned char *)&s, sizeof(s));
+	LOGD("Result of writeBytes(): ", result);
+	CoreServices::sendStatusMessage("Data sent");
 }
 
 void StimControl::deviceInitialized(bool val) {
@@ -143,16 +156,21 @@ bool StimControl::isDeviceInitialized() {
 	return isDeviceSetup;
 }
 void StimControl::setupDevice() {
-	auto editor = static_cast<StimControlEditor*>(getEditor());
-	int selected = editor->deviceId;
-	if ( selected >= 0 ) {
-		std::cout << "Initializing device... " << std::endl;
-		serial.setup(selected, baudrate);
-		deviceInitialized(true);
-		std::cout << "Device successfully initialized" << std::endl;
+	for (auto stream : getDataStreams()) {
+        if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
+			auto this_dev = settings[stream->getStreamId()];
+			auto selected = this_dev->deviceId;
+			LOGD("Device ID: ", selected);
+			if ( selected >= 0 ) {
+				CoreServices::sendStatusMessage("Initializing device...");
+				serial.setup(selected, baudrate);
+				deviceInitialized(true);
+				CoreServices::sendStatusMessage("Device successfully initialized");
+			}
+			else
+				CoreServices::sendStatusMessage("Select a device first.");
+		}
 	}
-	else
-		CoreServices::sendStatusMessage("Select a device first.");
 }
 
 void StimControl::setupDevice(std::string devId) {
@@ -164,80 +182,79 @@ std::vector<ofSerialDeviceInfo> StimControl::getDeviceList(){
 	return serial.getDeviceList();
 }
 
+void StimControl::getDeviceList(std::map<std::string, int>& namesAndIDs) {
+	auto devices = getDeviceList();
+	for (auto dev : devices) {
+		namesAndIDs[dev.getDeviceName()] = dev.getDeviceID();
+	}
+}
+
 void StimControl::closeDevice() {
 	serial.close();
 }
 
-void StimControl::setDeviceString(std::string val) {
-	devString = val;
-}
-
-std::string StimControl::getDeviceString() {
-	return devString;
-}
-
 void StimControl::saveCustomParametersToXml(XmlElement* xml) {
-	xml->setAttribute("Type", "StimControl");
-	XmlElement * paramXml = xml->createNewChildElement("Parameters");
-	auto current_settings = getSettings();
-	paramXml->setAttribute("InputPin", static_cast<int>(current_settings.inputPin));
-	paramXml->setAttribute("OutputPin", static_cast<int>(current_settings.outputPin));
-	paramXml->setAttribute("StartTime", static_cast<int>(current_settings.startTime));
-	paramXml->setAttribute("StopTime", static_cast<int>(current_settings.stopTime));
-	paramXml->setAttribute("StimStartTime", static_cast<int>(current_settings.stimOnTime));
-	paramXml->setAttribute("StimStopTime", static_cast<int>(current_settings.stimOffTime));
+	// xml->setAttribute("Type", "StimControl");
+	// XmlElement * paramXml = xml->createNewChildElement("Parameters");
+	// auto current_settings = getSettings();
+	// paramXml->setAttribute("InputPin", static_cast<int>(current_settings.inputPin));
+	// paramXml->setAttribute("OutputPin", static_cast<int>(current_settings.outputPin));
+	// paramXml->setAttribute("StartTime", static_cast<int>(current_settings.startTime));
+	// paramXml->setAttribute("StopTime", static_cast<int>(current_settings.stopTime));
+	// paramXml->setAttribute("StimStartTime", static_cast<int>(current_settings.stimOnTime));
+	// paramXml->setAttribute("StimStopTime", static_cast<int>(current_settings.stimOffTime));
 
-	XmlElement * deviceXml = xml->createNewChildElement("Devices");
-	deviceXml->setAttribute("id", getDeviceString());
+	// XmlElement * deviceXml = xml->createNewChildElement("Devices");
+	// deviceXml->setAttribute("id", getDeviceString());
 }
 
-void StimControl::loadCustomParametersFromXml() {
-	if ( parametersAsXml != nullptr ) {
-		forEachXmlChildElementWithTagName(*parametersAsXml, paramXml, "Parameters")
-		{
-			if ( paramXml->hasAttribute("InputPin") )
-				m_settings.inputPin = static_cast<uint16_t>(paramXml->getIntAttribute("InputPin"));
-			if ( paramXml->hasAttribute("OutputPin") )
-				m_settings.outputPin = static_cast<uint16_t>(paramXml->getIntAttribute("OutputPin"));
-			if ( paramXml->hasAttribute("StartTime") )
-				m_settings.startTime = static_cast<uint16_t>(paramXml->getIntAttribute("StartTime"));
-			if ( paramXml->hasAttribute("StopTime") )
-				m_settings.stopTime = static_cast<uint16_t>(paramXml->getIntAttribute("StopTime"));
-			if ( paramXml->hasAttribute("StimStartTime") )
-				m_settings.stimOnTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStartTime"));
-			if ( paramXml->hasAttribute("StimStopTime") )
-				m_settings.stimOffTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStopTime"));
-		}
-		auto editor = static_cast<StimControlEditor*>(getEditor());
-		editor->setStartTime(m_settings.startTime);
-		editor->setStopTime(m_settings.stopTime);
-		editor->setInputPin(m_settings.inputPin);
-		editor->setOutputPin(m_settings.outputPin);
-		editor->setStimOnTime(m_settings.stimOnTime);
-		editor->setStimOffTime(m_settings.stimOffTime);
+void StimControl::loadCustomParametersFromXml(XmlElement* xml) {
+	// if ( parametersAsXml != nullptr ) {
+	// 	forEachXmlChildElementWithTagName(*parametersAsXml, paramXml, "Parameters")
+	// 	{
+	// 		if ( paramXml->hasAttribute("InputPin") )
+	// 			m_settings.inputPin = static_cast<uint16_t>(paramXml->getIntAttribute("InputPin"));
+	// 		if ( paramXml->hasAttribute("OutputPin") )
+	// 			m_settings.outputPin = static_cast<uint16_t>(paramXml->getIntAttribute("OutputPin"));
+	// 		if ( paramXml->hasAttribute("StartTime") )
+	// 			m_settings.startTime = static_cast<uint16_t>(paramXml->getIntAttribute("StartTime"));
+	// 		if ( paramXml->hasAttribute("StopTime") )
+	// 			m_settings.stopTime = static_cast<uint16_t>(paramXml->getIntAttribute("StopTime"));
+	// 		if ( paramXml->hasAttribute("StimStartTime") )
+	// 			m_settings.stimOnTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStartTime"));
+	// 		if ( paramXml->hasAttribute("StimStopTime") )
+	// 			m_settings.stimOffTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStopTime"));
+	// 	}
+	// 	auto editor = (StimControlEditor*)(getEditor());
+	// 	// editor->setStartTime(m_settings.startTime);
+	// 	// editor->setStopTime(m_settings.stopTime);
+	// 	// editor->setInputPin(m_settings.inputPin);
+	// 	// editor->setOutputPin(m_settings.outputPin);
+	// 	// editor->setStimOnTime(m_settings.stimOnTime);
+	// 	// editor->setStimOffTime(m_settings.stimOffTime);
 		
-		forEachXmlChildElementWithTagName(*parametersAsXml, deviceXml, "Devices")
-		{
-			std::string device = deviceXml->getStringAttribute("id").toStdString();
-			if ( ! device.empty() )
-			{
-				setupDevice(device);
-				editor->setDeviceId(device);
-				setDeviceString(device);
-			}
-		}
-		setPinStates();
-		setStartAndStopTimes();
-		setStimDurations();
-	}
+	// 	forEachXmlChildElementWithTagName(*parametersAsXml, deviceXml, "Devices")
+	// 	{
+	// 		std::string device = deviceXml->getStringAttribute("id").toStdString();
+	// 		if ( ! device.empty() )
+	// 		{
+	// 			setupDevice(device);
+	// 			// editor->setDeviceId(device);
+	// 			setDeviceString(device);
+	// 		}
+	// 	}
+		// setPinStates();
+		// setStartAndStopTimes();
+		// setStimDurations();
+	// }
 }
 
 void StimControl::printParams(StimSettings settings) {
-	std::cout << "Device is: " << devString << " with settings:\n"
-	<< "Input pin: " << static_cast<int>(settings.inputPin) <<
-	"\nOutput pin: " << static_cast<int>(settings.outputPin) <<
-	"\nStart time (s): " << static_cast<int>(settings.startTime) <<
-	"\nStop time (s): " << static_cast<int>(settings.stopTime) <<
-	"\nStim on duration (ms): " << static_cast<int>(settings.stimOnTime) <<
-	"\nStim off duration (ms): " << static_cast<int>(settings.stimOffTime) << std::endl;
+	LOGC("Has data: ", settings.hasData);
+	LOGC("Input pin: ", settings.inputPin);
+	LOGC("Output pin: ", settings.outputPin);
+	LOGC("Start time (s): ", settings.startTime);
+	LOGC("Stop time (s): ", settings.stopTime);
+	LOGC("Stim on duration (ms): ", settings.stimOnTime);
+	LOGC("Stim off duration (ms): ", settings.stimOffTime);
 }

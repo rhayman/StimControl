@@ -6,7 +6,7 @@ unsigned int ledPin = 13;
 double clock_freq = 16000000;
 
 volatile boolean doStim = false;
-unsigned long startStimulation_ms = 600*1000;
+unsigned long startStimulation_ms = 1*1000;
 unsigned long stopStimulation_ms = 1800*1000;
 unsigned long timerTicks = 0;
 
@@ -14,13 +14,14 @@ unsigned long timerTicks = 0;
 // see StimControl.h there
 struct StimSettings {
   uint16_t inputPin = 13;
-  uint16_t outputPin = 13;
-  uint16_t startTime = 600;
+  uint16_t outputPin = 3;
+  uint16_t startTime = 1;
   uint16_t stopTime = 1800;
   uint16_t stimOnTime = 10;
   uint16_t stimOffTime = 150;
-  bool hasData = false;
+  uint16_t hasData = 1;
 };
+StimSettings stim;
 
 void startCounting(unsigned long start_ms, unsigned long stop_ms)
 {
@@ -98,14 +99,16 @@ void setup() {
 
 ISR(TIMER1_COMPA_vect)
 {
-  if (doStim)
+  if (doStim) {
     digitalWrite(ledPin, LOW);
+  }
 }
 
 ISR(TIMER1_COMPB_vect)
 {
-  if (doStim)
+  if (doStim) {
     digitalWrite(ledPin, HIGH);
+  }
 }
 
 void stopStimulation() {
@@ -124,20 +127,21 @@ StimSettings current_settings;
 
 void loop() {
   if ( Serial.available() > 0 ) {
-    if ( Serial.readBytes((char*)&current_settings, sizeof(current_settings)) == sizeof(StimSettings) ) {
-      if (current_settings.hasData == true) {
+    // if ( Serial.readBytes((char*)&current_settings, sizeof(current_settings)) == sizeof(StimSettings) ) {
+      if (stim.hasData > 0) {
         noInterrupts();
-        ledPin = current_settings.outputPin;
+        ledPin = stim.outputPin;
         pinMode(ledPin, OUTPUT);
-        calculateCompareTimes(current_settings.stimOffTime, current_settings.stimOnTime);
-        unsigned long start_at = (unsigned long)current_settings.startTime;// * 1000;
-        unsigned long stop_at = (unsigned long)current_settings.stopTime;// * 1000;
+        pinMode(LED_BUILTIN, OUTPUT);
+        calculateCompareTimes(stim.stimOffTime, stim.stimOnTime);
+        unsigned long start_at = (unsigned long)stim.startTime;// * 1000;
+        unsigned long stop_at = (unsigned long)stim.stopTime;// * 1000;
         startCounting(start_at*1000, stop_at*1000);
         interrupts();
       }
       else {
         stopStimulation();
       }
-    }
+    // }
   }
 }
