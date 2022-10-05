@@ -2,7 +2,6 @@
 #define STIMCONTROLEDITOR_H_
 
 #include <EditorHeaders.h>
-#include "StimControl.hpp"
 
 class StimControlEditor : public GenericEditor
 {

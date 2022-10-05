@@ -27,7 +27,7 @@ auto const arduino_lines = Array<String>{"1", "2", "3", "4", "5", "6", "7", "8",
 
 class StimControlSettings {
 public:
-	StimControlSettings() {}
+	StimControlSettings() {};
 	uint16_t inputPin = 0;
 	uint16_t outputPin = 0;
 	uint16_t startTime = 0;
@@ -66,6 +66,7 @@ public:
 	// void handleTTLEvent(TTLEventPtr) override;
 	void parameterValueChanged(Parameter *param) override;
 	void updateSettings() override;
+	int sendStringToDevice(std::string const &);
 
 	// void handleEvent(const EventChannel *, const MidiMessage &, int) override;
 	AudioProcessorEditor * createEditor() override;

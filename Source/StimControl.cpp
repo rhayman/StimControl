@@ -91,10 +91,6 @@ void StimControl::parameterValueChanged(Parameter * param) {
 	}
 }
 
-// void StimControl::handleTTLEvent(TTLEventPtr event) {
-
-// }
-
 void StimControl::updateSettings() {
 	dataStreams.clear();
     eventChannels.clear();
@@ -108,6 +104,10 @@ void StimControl::updateSettings() {
         auto stream = new DataStream(streamsettings);
         dataStreams.add(stream);
         dataStreams.getLast()->addProcessor(processorInfo.get());
+		
+		// EventChannel::Settings s{EventChannel::Type::CUSTOM,
+		// 	""}
+		// auto events = new EventChannel(s);
     }
 	settings.update(getDataStreams());
 	isEnabled = true;
@@ -141,11 +141,20 @@ void StimControl::sendData() {
 	CoreServices::sendStatusMessage("Sending data");
 	StimSettings s = getSettings();
 	printParams(s);
-	LOGD("size of settings: ", sizeof((unsigned char*)&s));
-	LOGD("Size of StimSettings: ", sizeof(s));
-	auto result = serial.writeBytes((unsigned char *)&s, sizeof(s));
-	LOGD("Result of writeBytes(): ", result);
+	sendStringToDevice("<Start," + std::to_string(s.startTime) + ",>");
+	sendStringToDevice("<Stop," + std::to_string(s.stopTime) + ",>");
+	sendStringToDevice("<OutputPin," + std::to_string(s.outputPin) + ",>");
+	sendStringToDevice("<Duration," + std::to_string(s.stimOnTime) + ",>");
+	sendStringToDevice("<Interval," + std::to_string(s.stimOffTime) + ",>");
+	auto startRunning = (bool)getParameter("Apply")->getValue();
+	LOGD("StartRunning: ", startRunning);
+	sendStringToDevice("<StartRunning," + std::to_string(startRunning) + ",>");
 	CoreServices::sendStatusMessage("Data sent");
+}
+
+int StimControl::sendStringToDevice(std::string const & str) {
+	std::vector<unsigned char> cstr(str.data(), str.data() + str.size() + 1);
+	return serial.writeBytes(&cstr[0], sizeof(str));
 }
 
 void StimControl::deviceInitialized(bool val) {

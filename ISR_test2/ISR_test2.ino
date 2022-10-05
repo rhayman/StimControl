@@ -126,7 +126,7 @@ void stopStimulation() {
 StimSettings current_settings;
 
 void loop() {
-  if ( Serial.available() > 0 ) {
+  // if ( Serial.available() > 0 ) {
     // if ( Serial.readBytes((char*)&current_settings, sizeof(current_settings)) == sizeof(StimSettings) ) {
       if (stim.hasData > 0) {
         noInterrupts();
@@ -143,5 +143,5 @@ void loop() {
         stopStimulation();
       }
     // }
-  }
+  // }
 }
