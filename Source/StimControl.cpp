@@ -28,12 +28,27 @@ StimControl::StimControl() : GenericProcessor("StimControl"),
 }
 
 StimControl::~StimControl() {
+	sendStringToDevice("<StartRunning, 0, >");
 	serial.flush(true, true);
 	serial.close();
 }
 
 void StimControl::process(AudioSampleBuffer & buffer) {
 	checkForEvents();
+}
+
+bool StimControl::startAcquisition() {
+	if ( ! isDeviceInitialized() ) {
+		setupDevice();
+	}
+	sendData();
+	serial.flush(true, true);
+	return true;
+}
+
+bool StimControl::stopAcquisition() {
+	sendStringToDevice("<StartRunning, 0, >");
+	serial.flush(true, true);
 }
 
 void StimControl::startRecording() {
@@ -45,8 +60,7 @@ void StimControl::startRecording() {
 }
 
 void StimControl::stopRecording() {
-	m_settings.hasData = 0;
-	sendData();
+	sendStringToDevice("<StartRunning, 0, >");
 	serial.flush(true, true);
 }
 
@@ -59,6 +73,7 @@ void StimControl::parameterValueChanged(Parameter * param) {
 				std::map<std::string, int> devices;
 				getDeviceList(devices);
 				this_dev->deviceId = devices[this_dev->name];
+				setupDevice();
 			}
 			else if (param->getName().equalsIgnoreCase("Trigger")) {
 				this_dev->inputPin = ((CategoricalParameter*)(param))->getSelectedString().getIntValue();
@@ -74,26 +89,18 @@ void StimControl::parameterValueChanged(Parameter * param) {
 			}
 			else if (param->getName().equalsIgnoreCase("Stop")) {
 				this_dev->stopTime = (int)param->getValue();
-				LOGD("Stop value: ", (int)param->getValue());
 			}
 			else if (param->getName().equalsIgnoreCase("Duration")) {
 				this_dev->stimOnTime = (int)param->getValue();
-				LOGD("Duration value: ", (int)param->getValue());
 			}
 			else if (param->getName().equalsIgnoreCase("Interval")) {
 				this_dev->stimOffTime = (int)param->getValue();
-				LOGD("Interval value: ", (int)param->getValue());
-			}
-			else if (param->getName().equalsIgnoreCase("Apply")) {
-				sendData();
 			}	
 		}
 	}
 }
 
 void StimControl::updateSettings() {
-	dataStreams.clear();
-    eventChannels.clear();
 
 	if ( getDataStreams().isEmpty() ) {
         DataStream::Settings streamsettings{"StimControl datastream",
@@ -104,10 +111,6 @@ void StimControl::updateSettings() {
         auto stream = new DataStream(streamsettings);
         dataStreams.add(stream);
         dataStreams.getLast()->addProcessor(processorInfo.get());
-		
-		// EventChannel::Settings s{EventChannel::Type::CUSTOM,
-		// 	""}
-		// auto events = new EventChannel(s);
     }
 	settings.update(getDataStreams());
 	isEnabled = true;
@@ -124,12 +127,12 @@ StimSettings StimControl::getSettings() {
         if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
 			auto this_dev = settings[stream->getStreamId()];
 			current_settings.hasData = 1;
-			current_settings.inputPin = this_dev->inputPin;
-			current_settings.outputPin = this_dev->outputPin;
-			current_settings.startTime = this_dev->startTime;
-			current_settings.stopTime = this_dev->stopTime;
-			current_settings.stimOffTime = this_dev->stimOffTime;
-			current_settings.stimOnTime = this_dev->stimOnTime;
+			current_settings.inputPin = ((CategoricalParameter*)(getParameter("Trigger")))->getSelectedString().getIntValue();
+			current_settings.outputPin = ((CategoricalParameter*)(getParameter("Output")))->getSelectedString().getIntValue();
+			current_settings.startTime =  (int)getParameter("Start")->getValue();
+			current_settings.stopTime =  (int)getParameter("Stop")->getValue();
+			current_settings.stimOffTime =  (int)getParameter("Interval")->getValue();
+			current_settings.stimOnTime =  (int)getParameter("Duration")->getValue();
 		}
 	}
 	return current_settings;
@@ -147,7 +150,6 @@ void StimControl::sendData() {
 	sendStringToDevice("<Duration," + std::to_string(s.stimOnTime) + ",>");
 	sendStringToDevice("<Interval," + std::to_string(s.stimOffTime) + ",>");
 	auto startRunning = (bool)getParameter("Apply")->getValue();
-	LOGD("StartRunning: ", startRunning);
 	sendStringToDevice("<StartRunning," + std::to_string(startRunning) + ",>");
 	CoreServices::sendStatusMessage("Data sent");
 }
@@ -169,7 +171,6 @@ void StimControl::setupDevice() {
         if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
 			auto this_dev = settings[stream->getStreamId()];
 			auto selected = this_dev->deviceId;
-			LOGD("Device ID: ", selected);
 			if ( selected >= 0 ) {
 				CoreServices::sendStatusMessage("Initializing device...");
 				serial.setup(selected, baudrate);

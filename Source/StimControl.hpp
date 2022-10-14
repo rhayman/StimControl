@@ -9,11 +9,11 @@
 #define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
 #endif
 
-#ifdef _MSC_VER
-#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
-#endif
+// #ifdef _MSC_VER
+// #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
+// #endif
 
-PACK(struct StimSettings {
+struct StimSettings {
 	uint16_t inputPin = 0;
 	uint16_t outputPin = 0; 
 	uint16_t startTime = 0;
@@ -21,7 +21,7 @@ PACK(struct StimSettings {
 	uint16_t stimOnTime = 0;
 	uint16_t stimOffTime = 0;
 	uint16_t hasData = 0;
-});
+};
 
 auto const arduino_lines = Array<String>{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"};
 
@@ -29,11 +29,11 @@ class StimControlSettings {
 public:
 	StimControlSettings() {};
 	uint16_t inputPin = 0;
-	uint16_t outputPin = 0;
-	uint16_t startTime = 0;
-	uint16_t stopTime = 0;
-	uint16_t stimOnTime = 0;
-	uint16_t stimOffTime = 0;
+	uint16_t outputPin = 3;
+	uint16_t startTime = 1;
+	uint16_t stopTime = 2000;
+	uint16_t stimOnTime = 5;
+	uint16_t stimOffTime = 20;
 	uint16_t hasData = 0;
 	std::string name = "";
 	uint16_t deviceId = 0;
@@ -52,7 +52,7 @@ private:
 	std::unique_ptr<juce::int64> initialTimeStamp = nullptr;
 	unsigned int baudrate = 9600;
 	ofSerial serial;
-	StimSettings m_settings;
+	// StimSettings m_settings;
 	void deviceInitialized(bool);
 	// std::string out_stream_file{"/home/robin/Dropbox/Science/Recordings/OpenEphys/testing/timestamps.txt"};
 	std::ofstream ofs;
@@ -60,6 +60,8 @@ private:
 public:
 	StimControl();
 	~StimControl();
+	bool startAcquisition() override;
+	bool stopAcquisition() override;
 	void startRecording() override;
 	void stopRecording() override;
 	void process(AudioSampleBuffer & buffer) override;
