@@ -49,6 +49,7 @@ bool StimControl::startAcquisition() {
 bool StimControl::stopAcquisition() {
 	sendStringToDevice("<StartRunning, 0, >");
 	serial.flush(true, true);
+	return true;
 }
 
 void StimControl::startRecording() {
@@ -111,6 +112,15 @@ void StimControl::updateSettings() {
         auto stream = new DataStream(streamsettings);
         dataStreams.add(stream);
         dataStreams.getLast()->addProcessor(processorInfo.get());
+
+		ContinuousChannel::Settings settings{
+            ContinuousChannel::Type::AUX,
+            "DUMMY",
+            "stim channel",
+            "stim.raw",
+            1,
+            dataStreams.getLast()};
+        continuousChannels.add(new ContinuousChannel(settings));
     }
 	settings.update(getDataStreams());
 	isEnabled = true;
