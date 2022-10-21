@@ -52,9 +52,7 @@ private:
 	std::unique_ptr<juce::int64> initialTimeStamp = nullptr;
 	unsigned int baudrate = 9600;
 	ofSerial serial;
-	// StimSettings m_settings;
 	void deviceInitialized(bool);
-	// std::string out_stream_file{"/home/robin/Dropbox/Science/Recordings/OpenEphys/testing/timestamps.txt"};
 	std::ofstream ofs;
 	StreamSettings<StimControlSettings> settings;
 public:
@@ -65,12 +63,10 @@ public:
 	void startRecording() override;
 	void stopRecording() override;
 	void process(AudioSampleBuffer & buffer) override;
-	// void handleTTLEvent(TTLEventPtr) override;
 	void parameterValueChanged(Parameter *param) override;
 	void updateSettings() override;
 	int sendStringToDevice(std::string const &);
 
-	// void handleEvent(const EventChannel *, const MidiMessage &, int) override;
 	AudioProcessorEditor * createEditor() override;
 	std::vector<ofSerialDeviceInfo> getDeviceList();
 	void getDeviceList(std::map<std::string, int>&);
@@ -80,11 +76,7 @@ public:
 	void sendData();
 	StimSettings getSettings();
 	std::string getDeviceString();
-	// void setDeviceString(std::string);
 	void closeDevice();
-	void saveCustomParametersToXml(XmlElement *) override;
-	void loadCustomParametersFromXml(XmlElement *) override;
-
 	void printParams(StimSettings);
 private:
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StimControl);

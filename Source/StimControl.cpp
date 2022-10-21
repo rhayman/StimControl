@@ -25,6 +25,7 @@ StimControl::StimControl() : GenericProcessor("StimControl"),
 	addStringParameter(Parameter::GLOBAL_SCOPE, "Duration", "Stimulation duration", "10");
 	addStringParameter(Parameter::GLOBAL_SCOPE, "Interval", "Interval duration", "150");
 	addBooleanParameter(Parameter::GLOBAL_SCOPE, "Apply", "Apply during recording", true);
+	parameterValueChanged(getParameter("Device"));
 }
 
 StimControl::~StimControl() {
@@ -211,62 +212,6 @@ void StimControl::getDeviceList(std::map<std::string, int>& namesAndIDs) {
 
 void StimControl::closeDevice() {
 	serial.close();
-}
-
-void StimControl::saveCustomParametersToXml(XmlElement* xml) {
-	// xml->setAttribute("Type", "StimControl");
-	// XmlElement * paramXml = xml->createNewChildElement("Parameters");
-	// auto current_settings = getSettings();
-	// paramXml->setAttribute("InputPin", static_cast<int>(current_settings.inputPin));
-	// paramXml->setAttribute("OutputPin", static_cast<int>(current_settings.outputPin));
-	// paramXml->setAttribute("StartTime", static_cast<int>(current_settings.startTime));
-	// paramXml->setAttribute("StopTime", static_cast<int>(current_settings.stopTime));
-	// paramXml->setAttribute("StimStartTime", static_cast<int>(current_settings.stimOnTime));
-	// paramXml->setAttribute("StimStopTime", static_cast<int>(current_settings.stimOffTime));
-
-	// XmlElement * deviceXml = xml->createNewChildElement("Devices");
-	// deviceXml->setAttribute("id", getDeviceString());
-}
-
-void StimControl::loadCustomParametersFromXml(XmlElement* xml) {
-	// if ( parametersAsXml != nullptr ) {
-	// 	forEachXmlChildElementWithTagName(*parametersAsXml, paramXml, "Parameters")
-	// 	{
-	// 		if ( paramXml->hasAttribute("InputPin") )
-	// 			m_settings.inputPin = static_cast<uint16_t>(paramXml->getIntAttribute("InputPin"));
-	// 		if ( paramXml->hasAttribute("OutputPin") )
-	// 			m_settings.outputPin = static_cast<uint16_t>(paramXml->getIntAttribute("OutputPin"));
-	// 		if ( paramXml->hasAttribute("StartTime") )
-	// 			m_settings.startTime = static_cast<uint16_t>(paramXml->getIntAttribute("StartTime"));
-	// 		if ( paramXml->hasAttribute("StopTime") )
-	// 			m_settings.stopTime = static_cast<uint16_t>(paramXml->getIntAttribute("StopTime"));
-	// 		if ( paramXml->hasAttribute("StimStartTime") )
-	// 			m_settings.stimOnTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStartTime"));
-	// 		if ( paramXml->hasAttribute("StimStopTime") )
-	// 			m_settings.stimOffTime = static_cast<uint16_t>(paramXml->getIntAttribute("StimStopTime"));
-	// 	}
-	// 	auto editor = (StimControlEditor*)(getEditor());
-	// 	// editor->setStartTime(m_settings.startTime);
-	// 	// editor->setStopTime(m_settings.stopTime);
-	// 	// editor->setInputPin(m_settings.inputPin);
-	// 	// editor->setOutputPin(m_settings.outputPin);
-	// 	// editor->setStimOnTime(m_settings.stimOnTime);
-	// 	// editor->setStimOffTime(m_settings.stimOffTime);
-		
-	// 	forEachXmlChildElementWithTagName(*parametersAsXml, deviceXml, "Devices")
-	// 	{
-	// 		std::string device = deviceXml->getStringAttribute("id").toStdString();
-	// 		if ( ! device.empty() )
-	// 		{
-	// 			setupDevice(device);
-	// 			// editor->setDeviceId(device);
-	// 			setDeviceString(device);
-	// 		}
-	// 	}
-		// setPinStates();
-		// setStartAndStopTimes();
-		// setStimDurations();
-	// }
 }
 
 void StimControl::printParams(StimSettings settings) {
