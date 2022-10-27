@@ -124,6 +124,7 @@ void StimControl::updateSettings() {
         continuousChannels.add(new ContinuousChannel(settings));
     }
 	settings.update(getDataStreams());
+	parameterValueChanged(getParameter("Device"));
 	isEnabled = true;
 }
 
