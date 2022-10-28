@@ -17,4 +17,6 @@ This should be fairly self-evident. Identifying the right device can be a bit of
 ![](Arduino/StimControl.png)
 
 ### Notes
-Trigger and gate pins do nothing at the moment
+Trigger and gate pins do nothing at the moment.
+
+Plugin is compliant with open-ephys release v0.6.2
