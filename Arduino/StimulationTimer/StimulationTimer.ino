@@ -1,9 +1,10 @@
+bool debug = true;
 double clock_freq = 16000000;
 unsigned int ledPin = 13;
 
 volatile boolean doStim = false;
 unsigned long startStimulation_ms = 1*1000;
-unsigned long stopStimulation_ms = 1800*1000;
+unsigned long stopStimulation_ms = 100*1000;
 unsigned long timerTicks = 0;
 
 const byte numChars = 32;
@@ -59,7 +60,7 @@ ISR(TIMER2_COMPA_vect) {
   doStim = true;
 }
 
-void calculateCompareTimes(uint16_t stimOnTime, uint16_t stimDuration) {
+void calculateCompareTimes(uint16_t stimInterval, uint16_t stimDuration) {
   // Reset Timer1
   TCCR1A = 0;
   TCCR1B = 0;
@@ -74,7 +75,7 @@ void calculateCompareTimes(uint16_t stimOnTime, uint16_t stimDuration) {
   // you want the pulse to come on. So with a prescaler of 256 it looks like:
   // start = 16e6/256/(1000/150.) = 9375.0 
   float prescaler = 64.0;
-  unsigned long start = floor(clock_freq / prescaler / (1000.0 / float(stimOnTime)));
+  unsigned long start = floor(clock_freq / prescaler / (1000.0 / float(stimInterval)));
   OCR1A = start;
   // the next interrupt is triggered to set the pulse pin go high:
   // This is the duration of time you want the pin to go high for (10 ms in my default case)
@@ -144,6 +145,15 @@ void recvWithStartEndMarkers() {
     char endMarker = '>';
     char rc;
 
+    // Debugging stuff
+    if (debug) {
+      bool serial_avail = (Serial.available() > 0);
+      Serial.println("Serial avail:");
+      Serial.println(serial_avail);
+      Serial.println("newData");
+      Serial.println(newData);
+    }
+
     while (Serial.available() > 0 && newData == false) {
         rc = Serial.read();
 
@@ -182,21 +192,45 @@ void parseData() {      // split the data into its parts
 
     if ( String(messageFromPC).equals("Start") ) {
       startTime = integerFromPC;
+      if (debug) {
+        Serial.println("startTime:");
+        Serial.println(startTime);
+      }
     }
     else if (String(messageFromPC).equals("Stop")){
       stopTime = integerFromPC;
+      if (debug) {
+        Serial.println("stopTime:");
+        Serial.println(stopTime);
+      }
     }
     else if (String(messageFromPC).equals("OutputPin")){
       outputPin = integerFromPC;
+      if (debug) {
+        Serial.println("outputPin:");
+        Serial.println(outputPin);
+      }
     }
     else if (String(messageFromPC).equals("Duration")){
       duration = integerFromPC;
+      if (debug) {
+        Serial.println("duration");
+        Serial.println(duration);
+      }
     }
     else if (String(messageFromPC).equals("Interval")){
       interval = integerFromPC;
+      if (debug) {
+        Serial.println("interval:");
+        Serial.println(interval);
+      }
     }
     else if (String(messageFromPC).equals("StartRunning")){
       startRunning = integerFromPC;
+      if (debug) {
+        Serial.println("startRunning");
+        Serial.println(startRunning);
+      }
     }
 }
 
