@@ -13,7 +13,7 @@
 // #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__
 // __pragma( pack(pop)) #endif
 
-bool debug = true;
+// bool debug = true;
 
 struct StimSettings {
   uint16_t inputPin = 0;
@@ -30,8 +30,9 @@ auto const arduino_lines = Array<String>{"1", "2", "3",  "4",  "5",  "6", "7",
 
 class StimControlSettings {
 public:
-  StimControlSettings(){};
+  StimControlSettings() {};
   uint16_t inputPin = 0;
+  uint16_t gatePin = 2;
   uint16_t outputPin = 3;
   uint16_t startTime = 1;
   uint16_t stopTime = 2000;
@@ -57,6 +58,7 @@ private:
   void deviceInitialized(bool);
   std::ofstream ofs;
   StreamSettings<StimControlSettings> settings;
+  virtual void registerParameters() override;
 
 public:
   StimControl();

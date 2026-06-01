@@ -6,28 +6,32 @@
 
 StimControl::StimControl()
     : GenericProcessor("StimControl"), outputChannel(13), inputChannel(-1),
-      state(true), acquisitionActive(false), deviceSelected(false) {
+      state(true), acquisitionActive(false), deviceSelected(false) {}
+
+void StimControl::registerParameters() {
   std::map<std::string, int> devices;
   getDeviceList(devices);
   Array<String> devs;
   for (auto dev : devices)
     devs.add(dev.first);
-  addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Device", "Device name",
-                          devs, 0);
-  addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Trigger", "Trigger line",
-                          arduino_lines, 0);
-  addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Gate", "Gate line",
-                          arduino_lines, 1);
-  addCategoricalParameter(Parameter::GLOBAL_SCOPE, "Output", "Output line",
-                          arduino_lines, 1);
-  addStringParameter(Parameter::GLOBAL_SCOPE, "Start", "Start time (s)", "0");
-  addStringParameter(Parameter::GLOBAL_SCOPE, "Stop", "Stop time (s)", "2000");
-  addStringParameter(Parameter::GLOBAL_SCOPE, "Duration",
-                     "Stimulation duration (ms)", "10");
-  addStringParameter(Parameter::GLOBAL_SCOPE, "Interval",
-                     "Interval duration(ms)", "150");
-  addBooleanParameter(Parameter::GLOBAL_SCOPE, "Apply",
-                      "Apply during recording", true);
+  addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "device", "Device name",
+                          "Devices available", devs, 0);
+  addTtlLineParameter(Parameter::STREAM_SCOPE, "Trigger", "Trigger line",
+                      "Trigger line on Arduino", arduino_lines.size(), 0);
+  addTtlLineParameter(Parameter::STREAM_SCOPE, "Gate", "Gate line",
+                      "Gate line on Arduino", arduino_lines.size(), 1);
+  addTtlLineParameter(Parameter::STREAM_SCOPE, "Output", "Output line",
+                      "Output line on Arduino", arduino_lines.size(), 1);
+  addStringParameter(Parameter::PROCESSOR_SCOPE, "Start", "Start time (s)",
+                     "Start time", "0");
+  addStringParameter(Parameter::PROCESSOR_SCOPE, "Stop", "Stop time (s)",
+                     "Stop time", "2000");
+  addStringParameter(Parameter::PROCESSOR_SCOPE, "Duration",
+                     "Stimulation duration (ms)", "Stim duration", "10");
+  addStringParameter(Parameter::PROCESSOR_SCOPE, "Interval",
+                     "Interval duration(ms)", "interval duration", "150");
+  addBooleanParameter(Parameter::PROCESSOR_SCOPE, "Apply",
+                      "Apply during recording", "apply during recording", true);
   parameterValueChanged(getParameter("Device"));
 }
 
@@ -71,7 +75,7 @@ void StimControl::parameterValueChanged(Parameter *param) {
   for (auto stream : getDataStreams()) {
     if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
       auto this_dev = settings[stream->getStreamId()];
-      if (param->getName().equalsIgnoreCase("Device")) {
+      if (param->getName().equalsIgnoreCase("device")) {
         this_dev->name = ((CategoricalParameter *)(param))
                              ->getSelectedString()
                              .toStdString();
@@ -80,16 +84,20 @@ void StimControl::parameterValueChanged(Parameter *param) {
         this_dev->deviceId = devices[this_dev->name];
         setupDevice();
       } else if (param->getName().equalsIgnoreCase("Trigger")) {
-        this_dev->inputPin = ((CategoricalParameter *)(param))
-                                 ->getSelectedString()
-                                 .getIntValue();
+        this_dev->inputPin = (int)param->getValue();
+        //   this_dev->inputPin = ((CategoricalParameter *)(param))
+        //                            ->getSelectedString()
+        //                            .getIntValue();
       } else if (param->getName().equalsIgnoreCase("Gate")) {
-        // this_dev->name =
-        // ((CategoricalParameter*)(param))->getSelectedString().toStdString();
+        this_dev->gatePin = (int)param->getValue();
+        //   // this_dev->name =
+        //   //
+        //   ((CategoricalParameter*)(param))->getSelectedString().toStdString();
       } else if (param->getName().equalsIgnoreCase("Output")) {
-        this_dev->outputPin = ((CategoricalParameter *)(param))
-                                  ->getSelectedString()
-                                  .getIntValue();
+        this_dev->outputPin = (int)param->getValue();
+        //   this_dev->outputPin = ((CategoricalParameter *)(param))
+        //                             ->getSelectedString()
+        //                             .getIntValue();
       } else if (param->getName().equalsIgnoreCase("Start")) {
         this_dev->startTime = (int)param->getValue();
       } else if (param->getName().equalsIgnoreCase("Stop")) {
@@ -112,7 +120,7 @@ void StimControl::updateSettings() {
 
     auto stream = new DataStream(streamsettings);
     dataStreams.add(stream);
-    dataStreams.getLast()->addProcessor(processorInfo.get());
+    dataStreams.getLast()->addProcessor(this);
 
     ContinuousChannel::Settings settings{
         ContinuousChannel::Type::AUX, "DUMMY", "stim channel", "stim.raw", 1,
@@ -120,7 +128,7 @@ void StimControl::updateSettings() {
     continuousChannels.add(new ContinuousChannel(settings));
   }
   settings.update(getDataStreams());
-  parameterValueChanged(getParameter("Device"));
+  parameterValueChanged(getParameter("device"));
   isEnabled = true;
 }
 
@@ -160,27 +168,30 @@ void StimControl::sendData() {
   printParams(s);
   int bytes_sent =
       sendStringToDevice("<Start," + std::to_string(s.startTime) + ",>");
+  bool debug = false;
+#if defined(DEBUG)
+  debug = true;
+#endif
   if (debug)
     LOGC("Bytes sent for startTime: ", bytes_sent);
-  int bytes_sent =
-      sendStringToDevice("<Stop," + std::to_string(s.stopTime) + ",>");
+  bytes_sent = sendStringToDevice("<Stop," + std::to_string(s.stopTime) + ",>");
   if (debug)
     LOGC("Bytes sent for stopTime: ", bytes_sent);
-  int bytes_sent =
+  bytes_sent =
       sendStringToDevice("<OutputPin," + std::to_string(s.outputPin) + ",>");
   if (debug)
     LOGC("Bytes sent for outputPin: ", bytes_sent);
-  int bytes_sent =
+  bytes_sent =
       sendStringToDevice("<Duration," + std::to_string(s.stimOnTime) + ",>");
   if (debug)
     LOGC("Bytes sent for duration: ", bytes_sent);
-  int bytes_sent =
+  bytes_sent =
       sendStringToDevice("<Interval," + std::to_string(s.stimOffTime) + ",>");
   if (debug)
     LOGC("Bytes sent for interval: ", bytes_sent);
   auto startRunning = (bool)getParameter("Apply")->getValue();
-  int bytes_sent = sendStringToDevice("<StartRunning," +
-                                      std::to_string(startRunning) + ",>");
+  bytes_sent = sendStringToDevice("<StartRunning," +
+                                  std::to_string(startRunning) + ",>");
   if (debug)
     LOGC("Bytes sent for startRunning: ", bytes_sent);
   CoreServices::sendStatusMessage("Data sent");
