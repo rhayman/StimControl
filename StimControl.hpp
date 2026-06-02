@@ -67,7 +67,7 @@ public:
   bool stopAcquisition() override;
   void startRecording() override;
   void stopRecording() override;
-  void process(AudioSampleBuffer &buffer) override;
+  void process(AudioBuffer<float> &buffer) override;
   void parameterValueChanged(Parameter *param) override;
   void updateSettings() override;
   int sendStringToDevice(std::string const &);
