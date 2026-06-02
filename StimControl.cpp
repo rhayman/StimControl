@@ -143,14 +143,8 @@ StimSettings StimControl::getSettings() {
     if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
       auto this_dev = settings[stream->getStreamId()];
       current_settings.hasData = 1;
-      current_settings.inputPin =
-          ((CategoricalParameter *)(getParameter("Trigger")))
-              ->getSelectedString()
-              .getIntValue();
-      current_settings.outputPin =
-          ((CategoricalParameter *)(getParameter("Output")))
-              ->getSelectedString()
-              .getIntValue();
+      current_settings.inputPin = this_dev->inputPin;
+      current_settings.outputPin = this_dev->outputPin;
       current_settings.startTime = (int)getParameter("Start")->getValue();
       current_settings.stopTime = (int)getParameter("Stop")->getValue();
       current_settings.stimOffTime = (int)getParameter("Interval")->getValue();
