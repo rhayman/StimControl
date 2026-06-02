@@ -167,27 +167,27 @@ void StimControl::sendData() {
   debug = true;
 #endif
   if (debug)
-    LOGC("Bytes sent for startTime: ", bytes_sent);
+    LOGD("Bytes sent for startTime: ", bytes_sent);
   bytes_sent = sendStringToDevice("<Stop," + std::to_string(s.stopTime) + ",>");
   if (debug)
-    LOGC("Bytes sent for stopTime: ", bytes_sent);
+    LOGD("Bytes sent for stopTime: ", bytes_sent);
   bytes_sent =
       sendStringToDevice("<OutputPin," + std::to_string(s.outputPin) + ",>");
   if (debug)
-    LOGC("Bytes sent for outputPin: ", bytes_sent);
+    LOGD("Bytes sent for outputPin: ", bytes_sent);
   bytes_sent =
       sendStringToDevice("<Duration," + std::to_string(s.stimOnTime) + ",>");
   if (debug)
-    LOGC("Bytes sent for duration: ", bytes_sent);
+    LOGD("Bytes sent for duration: ", bytes_sent);
   bytes_sent =
       sendStringToDevice("<Interval," + std::to_string(s.stimOffTime) + ",>");
   if (debug)
-    LOGC("Bytes sent for interval: ", bytes_sent);
+    LOGD("Bytes sent for interval: ", bytes_sent);
   auto startRunning = (bool)getParameter("Apply")->getValue();
   bytes_sent = sendStringToDevice("<StartRunning," +
                                   std::to_string(startRunning) + ",>");
   if (debug)
-    LOGC("Bytes sent for startRunning: ", bytes_sent);
+    LOGD("Bytes sent for startRunning: ", bytes_sent);
   CoreServices::sendStatusMessage("Data sent");
 }
 
@@ -241,11 +241,11 @@ void StimControl::getDeviceList(std::map<std::string, int> &namesAndIDs) {
 void StimControl::closeDevice() { serial.close(); }
 
 void StimControl::printParams(StimSettings settings) {
-  LOGC("Has data: ", settings.hasData);
-  LOGC("Input pin: ", settings.inputPin);
-  LOGC("Output pin: ", settings.outputPin);
-  LOGC("Start time (s): ", settings.startTime);
-  LOGC("Stop time (s): ", settings.stopTime);
-  LOGC("Stim on duration (ms): ", settings.stimOnTime);
-  LOGC("Stim off duration (ms): ", settings.stimOffTime);
+  LOGD("Has data: ", settings.hasData);
+  LOGD("Input pin: ", settings.inputPin);
+  LOGD("Output pin: ", settings.outputPin);
+  LOGD("Start time (s): ", settings.startTime);
+  LOGD("Stop time (s): ", settings.stopTime);
+  LOGD("Stim on duration (ms): ", settings.stimOnTime);
+  LOGD("Stim off duration (ms): ", settings.stimOffTime);
 }
