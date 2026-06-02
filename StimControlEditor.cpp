@@ -5,15 +5,15 @@
 
 StimControlEditor::StimControlEditor(GenericProcessor *proc)
     : GenericEditor(proc) {
-  desiredWidth = 420;
+  desiredWidth = 520;
 
   addComboBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "device", 10, 20);
-  addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Trigger", 100, 20);
-  addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Gate", 190, 20);
-  addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Output", 280, 20);
-  addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Start", 10, 60);
-  addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Stop", 100, 60);
-  addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Duration", 190, 60);
-  addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Interval", 280, 60);
-  addToggleParameterEditor(Parameter::PROCESSOR_SCOPE, "Apply", 380, 80);
+  addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Trigger", 10, 50);
+  addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Gate", 10, 80);
+  addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Output", 10, 110);
+  addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Start", 180, 20);
+  addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Stop", 180, 50);
+  addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Duration", 180, 80);
+  addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Interval", 180, 110);
+  addToggleParameterEditor(Parameter::PROCESSOR_SCOPE, "Apply", 360, 110);
 }
