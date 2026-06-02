@@ -41,7 +41,7 @@ StimControl::~StimControl() {
   serial.close();
 }
 
-void StimControl::process(AudioBuffer<float> &buffer) { checkForEvents(); }
+void StimControl::process(AudioBuffer<float> &buffer) {}
 
 bool StimControl::startAcquisition() {
   if (!isDeviceInitialized()) {
