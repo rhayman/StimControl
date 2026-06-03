@@ -204,7 +204,10 @@ void StimControl::sendData() {
 
 int StimControl::sendStringToDevice(std::string const &str) {
   std::vector<unsigned char> buffer(str.begin(), str.end());
-  return serial.writeBytes(buffer.data(), buffer.size());
+  LOGD("StimControl - sending string to device: ", str);
+  auto res = serial.writeBytes(buffer.data(), buffer.size());
+  LOGD("StimControl - sent string to device: ", str, " (", res, " bytes)");
+  return res;
 }
 
 void StimControl::deviceInitialized(bool val) { isDeviceSetup = val; }
