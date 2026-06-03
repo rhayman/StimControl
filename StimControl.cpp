@@ -115,24 +115,23 @@ void StimControl::parameterValueChanged(Parameter *param) {
 
 void StimControl::updateSettings() {
 
-  // if (getDataStreams().isEmpty()) {
-  //   DataStream::Settings streamsettings{
-  //       "StimControl datastream", "Datastream for stimulation from Arduino",
-  //       "external.stimulation.arduino", getDefaultSampleRate()};
-  //
-  //   auto stream = new DataStream(streamsettings);
-  //   dataStreams.add(stream);
-  //   dataStreams.getLast()->addProcessor(this);
-  //
-  //   ContinuousChannel::Settings settings{
-  //       ContinuousChannel::Type::AUX, "DUMMY", "stim channel", "stim.raw", 1,
-  //       dataStreams.getLast()};
-  //   continuousChannels.add(new ContinuousChannel(settings));
-  // }
-  // settings.update(getDataStreams());
+  if (getDataStreams().isEmpty()) {
+    DataStream::Settings streamsettings{
+        "StimControl datastream", "Datastream for stimulation from Arduino",
+        "external.stimulation.arduino", getDefaultSampleRate()};
+
+    auto stream = new DataStream(streamsettings);
+    dataStreams.add(stream);
+    dataStreams.getLast()->addProcessor(this);
+    //
+    //   ContinuousChannel::Settings settings{
+    //       ContinuousChannel::Type::AUX, "DUMMY", "stim channel", "stim.raw",
+    //       1, dataStreams.getLast()};
+    //   continuousChannels.add(new ContinuousChannel(settings));
+  }
+  settings.update(getDataStreams());
   // parameterValueChanged(getParameter("device"));
-  // isEnabled = true;
-  // LOGD("StimControl - Settings updated");
+  LOGD("StimControl - Settings updated");
 }
 
 AudioProcessorEditor *StimControl::createEditor() {
