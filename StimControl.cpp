@@ -5,8 +5,7 @@
 #include <stdio.h>
 
 StimControl::StimControl()
-    : GenericProcessor("StimControl"), outputChannel(13), inputChannel(-1),
-      state(true), acquisitionActive(false), deviceSelected(false) {}
+    : GenericProcessor("StimControl"), outputChannel(13), inputChannel(1) {}
 
 void StimControl::registerParameters() {
   std::map<std::string, int> devices;
@@ -41,9 +40,7 @@ StimControl::~StimControl() {
   serial.close();
 }
 
-void StimControl::process(AudioBuffer<float> &buffer) {
-  LOGD("StimControl - in process");
-}
+void StimControl::process(AudioBuffer<float> &buffer) {}
 
 bool StimControl::startAcquisition() {
   if (!isDeviceInitialized()) {
@@ -214,6 +211,7 @@ int StimControl::sendStringToDevice(std::string const &str) {
 void StimControl::deviceInitialized(bool val) { isDeviceSetup = val; }
 
 bool StimControl::isDeviceInitialized() { return isDeviceSetup; }
+
 void StimControl::setupDevice() {
   for (auto stream : getDataStreams()) {
     if (stream->getName().equalsIgnoreCase("StimControl datastream")) {

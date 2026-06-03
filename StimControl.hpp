@@ -45,18 +45,13 @@ public:
 
 class StimControl : public GenericProcessor {
 private:
-  bool state;
-  bool acquisitionActive = false;
-  bool deviceSelected = false;
   bool isDeviceSetup = false;
   int inputChannel = 13;
   int outputChannel = 13;
   int gateChannel = 13;
-  std::unique_ptr<juce::int64> initialTimeStamp = nullptr;
   unsigned int baudrate = 9600;
   ofSerial serial;
   void deviceInitialized(bool);
-  std::ofstream ofs;
   StreamSettings<StimControlSettings> settings;
   virtual void registerParameters() override;
 
