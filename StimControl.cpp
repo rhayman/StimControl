@@ -17,7 +17,7 @@ void StimControl::registerParameters() {
   addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "device", "Device name",
                           "Devices available", devs, 0);
   addTtlLineParameter(Parameter::STREAM_SCOPE, "Trigger", "Trigger line",
-                      "Trigger line on Arduino", arduino_lines.size(), 0);
+                      "Trigger line on Arduino", arduino_lines.size(), 1);
   addTtlLineParameter(Parameter::STREAM_SCOPE, "Gate", "Gate line",
                       "Gate line on Arduino", arduino_lines.size(), 1);
   addTtlLineParameter(Parameter::STREAM_SCOPE, "Output", "Output line",
@@ -32,7 +32,7 @@ void StimControl::registerParameters() {
                      "Interval duration(ms)", "interval duration", "150");
   addBooleanParameter(Parameter::PROCESSOR_SCOPE, "Apply", "",
                       "apply during recording", true);
-  parameterValueChanged(getParameter("Device"));
+  // parameterValueChanged(getParameter("Device"));
 }
 
 StimControl::~StimControl() {
@@ -80,6 +80,7 @@ void StimControl::parameterValueChanged(Parameter *param) {
     if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
       auto this_dev = settings[stream->getStreamId()];
       if (param->getName().equalsIgnoreCase("device")) {
+        LOGC("StimControl - device parameter changed: ", param->getValue());
         this_dev->name = ((CategoricalParameter *)(param))
                              ->getSelectedString()
                              .toStdString();
