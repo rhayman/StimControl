@@ -203,8 +203,17 @@ void StimControl::sendData() {
 }
 
 int StimControl::sendStringToDevice(std::string const &str) {
-  std::vector<unsigned char> cstr(str.data(), str.data() + str.size() + 1);
-  return serial.writeBytes(&cstr[0], sizeof(str));
+  int n = str.length();
+  unsigned char arr[n + 1];
+  auto first = str.begin();
+  auto last = str.end();
+
+  std::copy(first, last, arr);
+  arr[n] = '\0'; // Ensure null-termination
+
+  // std::vector<unsigned char> cstr(str.data(), str.data() + str.size() + 1);
+  // return serial.writeBytes(&cstr[0], sizeof(str));
+  return serial.writeBytes(arr, n);
 }
 
 void StimControl::deviceInitialized(bool val) { isDeviceSetup = val; }
