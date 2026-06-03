@@ -166,34 +166,39 @@ void StimControl::sendData() {
   CoreServices::sendStatusMessage("Sending data");
   StimSettings s = getSettings();
   printParams(s);
+  LOGD("StimControl - sending data to device");
   int bytes_sent =
       sendStringToDevice("<Start," + std::to_string(s.startTime) + ",>");
-  bool debug = false;
-#if defined(DEBUG)
-  debug = true;
-#endif
-  if (debug)
-    LOGD("Bytes sent for startTime: ", bytes_sent);
-  bytes_sent = sendStringToDevice("<Stop," + std::to_string(s.stopTime) + ",>");
-  if (debug)
-    LOGD("Bytes sent for stopTime: ", bytes_sent);
-  bytes_sent =
-      sendStringToDevice("<OutputPin," + std::to_string(s.outputPin) + ",>");
-  if (debug)
-    LOGD("Bytes sent for outputPin: ", bytes_sent);
-  bytes_sent =
-      sendStringToDevice("<Duration," + std::to_string(s.stimOnTime) + ",>");
-  if (debug)
-    LOGD("Bytes sent for duration: ", bytes_sent);
-  bytes_sent =
-      sendStringToDevice("<Interval," + std::to_string(s.stimOffTime) + ",>");
-  if (debug)
-    LOGD("Bytes sent for interval: ", bytes_sent);
+  //   bool debug = false;
+  // #if defined(DEBUG)
+  //   debug = true;
+  // #endif
+  //   if (debug)
+  //     LOGD("Bytes sent for startTime: ", bytes_sent);
+  //   bytes_sent = sendStringToDevice("<Stop," + std::to_string(s.stopTime) +
+  //   ",>"); if (debug)
+  //     LOGD("Bytes sent for stopTime: ", bytes_sent);
+  //   bytes_sent =
+  //       sendStringToDevice("<OutputPin," + std::to_string(s.outputPin) +
+  //       ",>");
+  //   if (debug)
+  //     LOGD("Bytes sent for outputPin: ", bytes_sent);
+  //   bytes_sent =
+  //       sendStringToDevice("<Duration," + std::to_string(s.stimOnTime) +
+  //       ",>");
+  //   if (debug)
+  //     LOGD("Bytes sent for duration: ", bytes_sent);
+  //   bytes_sent =
+  //       sendStringToDevice("<Interval," + std::to_string(s.stimOffTime) +
+  //       ",>");
+  //   if (debug)
+  //     LOGD("Bytes sent for interval: ", bytes_sent);
   auto startRunning = (bool)getParameter("Apply")->getValue();
   bytes_sent = sendStringToDevice("<StartRunning," +
                                   std::to_string(startRunning) + ",>");
-  if (debug)
-    LOGD("Bytes sent for startRunning: ", bytes_sent);
+  // if (debug)
+  //   LOGD("Bytes sent for startRunning: ", bytes_sent);
+  LOGD("StimControl - data sent to device");
   CoreServices::sendStatusMessage("Data sent");
 }
 
