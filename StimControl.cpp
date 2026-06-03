@@ -80,7 +80,7 @@ void StimControl::parameterValueChanged(Parameter *param) {
     if (stream->getName().equalsIgnoreCase("StimControl datastream")) {
       auto this_dev = settings[stream->getStreamId()];
       if (param->getName().equalsIgnoreCase("device")) {
-        LOGC("StimControl - device parameter changed: ", param->getName());
+        LOGD("StimControl - device parameter changed: ", param->getName());
         this_dev->name = ((CategoricalParameter *)(param))
                              ->getSelectedString()
                              .toStdString();
