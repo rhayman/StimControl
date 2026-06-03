@@ -41,7 +41,9 @@ StimControl::~StimControl() {
   serial.close();
 }
 
-void StimControl::process(AudioBuffer<float> &buffer) {}
+void StimControl::process(AudioBuffer<float> &buffer) {
+  LOGD("StimControl - in process");
+}
 
 bool StimControl::startAcquisition() {
   if (!isDeviceInitialized()) {
@@ -49,6 +51,7 @@ bool StimControl::startAcquisition() {
   }
   sendData();
   serial.flush(true, true);
+  LOGD("StimControl - Acquisition started");
   return true;
 }
 
@@ -63,6 +66,7 @@ void StimControl::startRecording() {
     setupDevice();
   }
   sendData();
+  LOGD("StimControl - Recording started");
   serial.flush(true, true);
 }
 
@@ -130,6 +134,7 @@ void StimControl::updateSettings() {
   settings.update(getDataStreams());
   parameterValueChanged(getParameter("device"));
   isEnabled = true;
+  LOGD("StimControl - Settings updated");
 }
 
 AudioProcessorEditor *StimControl::createEditor() {
@@ -151,6 +156,7 @@ StimSettings StimControl::getSettings() {
       current_settings.stimOnTime = (int)getParameter("Duration")->getValue();
     }
   }
+  LOGD("StimControl - getting Settings");
   return current_settings;
 }
 
