@@ -5,9 +5,10 @@
 
 StimControlEditor::StimControlEditor(GenericProcessor *proc)
     : GenericEditor(proc) {
-  desiredWidth = 520;
+  desiredWidth = 620;
 
   addComboBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "device", 10, 20);
+  addComboBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "Protocol", 320, 20);
   addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Trigger", 10, 50);
   addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Gate", 10, 80);
   addTtlLineParameterEditor(Parameter::STREAM_SCOPE, "Output", 10, 110);

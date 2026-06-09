@@ -1,4 +1,4 @@
-bool debug = true;
+bool debug = false;
 double clock_freq = 16000000;
 unsigned int ledPin = 13;
 
@@ -17,6 +17,28 @@ int integerFromPC = 0;
 
 boolean newData = false;
 
+struct __attribute__((packed)) StimBinaryPayload {
+  uint8_t magic0;
+  uint8_t magic1;
+  uint8_t version;
+  uint8_t payloadSize;
+  uint16_t inputPin;
+  uint16_t gatePin;
+  uint16_t outputPin;
+  uint16_t startTime;
+  uint16_t stopTime;
+  uint16_t stimOnTime;
+  uint16_t stimOffTime;
+  uint16_t hasData;
+  uint16_t startRunning;
+};
+
+const uint8_t binaryMagic0 = 0xA5;
+const uint8_t binaryMagic1 = 0x5A;
+const uint8_t binaryProtocolVersion = 1;
+
+int inputPin = 0;
+int gatePin = 0;
 int startTime = 600;
 int stopTime = 1800;
 int duration = 10;
@@ -60,33 +82,76 @@ ISR(TIMER2_COMPA_vect) {
   doStim = true;
 }
 
-void calculateCompareTimes(uint16_t stimInterval, uint16_t stimDuration) {
+void configureTimer1Prescaler(uint16_t prescaler) {
+  switch (prescaler) {
+    case 1:
+      TCCR1B = (1 << WGM12) | (1 << CS10);
+      break;
+    case 8:
+      TCCR1B = (1 << WGM12) | (1 << CS11);
+      break;
+    case 64:
+      TCCR1B = (1 << WGM12) | (1 << CS10) | (1 << CS11);
+      break;
+    case 256:
+      TCCR1B = (1 << WGM12) | (1 << CS12);
+      break;
+    default:
+      TCCR1B = (1 << WGM12) | (1 << CS10) | (1 << CS12);
+      break;
+  }
+}
+
+uint16_t chooseTimer1Prescaler(unsigned long totalPeriodMs) {
+  const uint16_t prescalers[] = {1, 8, 64, 256, 1024};
+
+  for (uint8_t idx = 0; idx < 5; ++idx) {
+    uint16_t prescaler = prescalers[idx];
+    unsigned long ticks =
+        floor(clock_freq / prescaler / (1000.0 / float(totalPeriodMs)));
+
+    if (ticks > 0 && ticks <= 65535) {
+      return prescaler;
+    }
+  }
+
+  return 1024;
+}
+
+void calculateCompareTimes(uint16_t stimOffTime, uint16_t stimDuration) {
   // Reset Timer1
   TCCR1A = 0;
   TCCR1B = 0;
   TCNT1 = 0; // Set Timer1 counter to 0
-  // set mode to CTC and prescaler to 64
-  TCCR1B = (1 << WGM12) | (1 << CS10) | (1 << CS11) | (0 << CS12); // was just (1 << CS12) - ie prescaler of 256
+
+  unsigned long onTimeMs = max(1, stimDuration);
+  unsigned long totalPeriodMs = max(onTimeMs + 1UL, onTimeMs + stimOffTime);
+  uint16_t prescaler = chooseTimer1Prescaler(totalPeriodMs);
+
+  // set mode to CTC and choose a prescaler that keeps OCR1A in range
+  configureTimer1Prescaler(prescaler);
   // enable timer compare interrupts for both registers on Timer1 (timer1_compA and timer1_compB)
   TIMSK1 = (1 << OCIE1A) | (1 << OCIE1B);
-  // When to go low:
-  // This is calculated as the clock frequency on the Arduino Uno (16MHz) divided by
-  // the pre-scaler divided by 1 second in ms divided by number of ms every second
-  // you want the pulse to come on. So with a prescaler of 256 it looks like:
-  // start = 16e6/256/(1000/150.) = 9375.0 
-  float prescaler = 64.0;
-  unsigned long start = floor(clock_freq / prescaler / (1000.0 / float(stimInterval)));
-  OCR1A = start;
-  // the next interrupt is triggered to set the pulse pin go high:
-  // This is the duration of time you want the pin to go high for (10 ms in my default case)
-  // Calculated as the above variable (called start in the above comment) minus this duration
-  // Duration is calculated by: clock_freq / pre-scaler / (1000/duration_in_ms).
-  // So this looks like:
-  // duration = 16e6 / 256 / (1000/10.) = 625.0 
-  // the OCR1B number is the start - duration so here it is 
-  // 9375.0 - 625.0 = 8750
-  unsigned long duration = floor(clock_freq / prescaler / (1000.0 / float(stimDuration)));
-  OCR1B = (start - duration);
+
+  unsigned long periodTicks =
+      floor(clock_freq / prescaler / (1000.0 / float(totalPeriodMs)));
+  unsigned long durationTicks =
+      floor(clock_freq / prescaler / (1000.0 / float(onTimeMs)));
+
+  if (periodTicks < 2) {
+    periodTicks = 2;
+  }
+
+  if (durationTicks == 0) {
+    durationTicks = 1;
+  }
+
+  if (durationTicks >= periodTicks) {
+    durationTicks = periodTicks - 1;
+  }
+
+  OCR1A = (uint16_t)periodTicks;
+  OCR1B = (uint16_t)(periodTicks - durationTicks);
 }
 
 ISR(TIMER1_COMPA_vect)
@@ -109,9 +174,11 @@ void stopStimulation() {
   digitalWrite(ledPin, LOW);
   digitalWrite(LED_BUILTIN, LOW);
   // disable interrupts on timer 1
-  TIMSK1 = (0 << OCIE1A) | (0 << OCIE1B);
+  TIMSK1 &= ~((1 << OCIE1A) | (1 << OCIE1B));
   // disable interrupts on timer 2
-  TIMSK2 |= (0 << OCIE2A);
+  TIMSK2 &= ~(1 << OCIE2A);
+  TCCR1B = 0;
+  TCCR2B = 0;
   interrupts();
 }
 
@@ -125,6 +192,9 @@ void setup() {
 //============
 
 void loop() {
+    if (readBinarySettings()) {
+        doStimulation();
+    }
     recvWithStartEndMarkers();
     if (newData == true) {
         strcpy(tempChars, receivedChars);
@@ -145,16 +215,11 @@ void recvWithStartEndMarkers() {
     char endMarker = '>';
     char rc;
 
-    // Debugging stuff
-    if (debug) {
-      bool serial_avail = (Serial.available() > 0);
-      Serial.println("Serial avail:");
-      Serial.println(serial_avail);
-      Serial.println("newData");
-      Serial.println(newData);
-    }
-
     while (Serial.available() > 0 && newData == false) {
+        if (recvInProgress == false && Serial.peek() != startMarker) {
+            return;
+        }
+
         rc = Serial.read();
 
         if (recvInProgress == true) {
@@ -181,51 +246,143 @@ void recvWithStartEndMarkers() {
 
 //============
 
+void trimWhitespace(char * value) {
+    if (value == NULL) {
+        return;
+    }
+
+    char * original = value;
+
+    while (*value == ' ' || *value == '\t') {
+        ++value;
+    }
+
+    char * start = value;
+    char * end = value + strlen(value);
+
+    while (end > start && (end[-1] == ' ' || end[-1] == '\t')) {
+        --end;
+    }
+
+    *end = '\0';
+
+    if (start != original) {
+        memmove(original, start, strlen(start) + 1);
+    }
+}
+
+bool readBinarySettings() {
+    while (Serial.available() > 0) {
+        int nextByte = Serial.peek();
+
+        if (nextByte == '<') {
+            return false;
+        }
+
+        if (nextByte != binaryMagic0) {
+            Serial.read();
+            continue;
+        }
+
+        if (Serial.available() < (int)sizeof(StimBinaryPayload)) {
+            return false;
+        }
+
+        StimBinaryPayload payload;
+        size_t bytesRead =
+            Serial.readBytes((char *)&payload, sizeof(StimBinaryPayload));
+
+        if (bytesRead != sizeof(StimBinaryPayload)) {
+            return false;
+        }
+
+        if (payload.magic0 != binaryMagic0 || payload.magic1 != binaryMagic1 ||
+            payload.version != binaryProtocolVersion ||
+            payload.payloadSize != sizeof(StimBinaryPayload)) {
+            continue;
+        }
+
+        inputPin = payload.inputPin;
+        gatePin = payload.gatePin;
+        outputPin = payload.outputPin;
+        startTime = payload.startTime;
+        stopTime = payload.stopTime;
+        duration = payload.stimOnTime;
+        interval = payload.stimOffTime;
+        startRunning = payload.startRunning;
+        return true;
+    }
+
+    return false;
+}
+
 void parseData() {      // split the data into its parts
 
     char * strtokIndx; // this is used by strtok() as an index
     strtokIndx = strtok(tempChars,",");      // get the first part - the string
+    if (strtokIndx == NULL) {
+      return;
+    }
+    trimWhitespace(strtokIndx);
     strcpy(messageFromPC, strtokIndx); // copy it to messageFromPC
     
     strtokIndx = strtok(NULL, ","); // this continues where the previous call left off
+    if (strtokIndx == NULL) {
+      return;
+    }
+    trimWhitespace(strtokIndx);
     integerFromPC = atoi(strtokIndx);     // convert this part to an integer
-
-    if ( String(messageFromPC).equals("Start") ) {
+ 
+    if ( strcmp(messageFromPC, "Start") == 0 ) {
       startTime = integerFromPC;
       if (debug) {
         Serial.println("startTime:");
         Serial.println(startTime);
       }
     }
-    else if (String(messageFromPC).equals("Stop")){
+    else if (strcmp(messageFromPC, "Stop") == 0){
       stopTime = integerFromPC;
       if (debug) {
         Serial.println("stopTime:");
         Serial.println(stopTime);
       }
     }
-    else if (String(messageFromPC).equals("OutputPin")){
+    else if (strcmp(messageFromPC, "InputPin") == 0){
+      inputPin = integerFromPC;
+      if (debug) {
+        Serial.println("inputPin:");
+        Serial.println(inputPin);
+      }
+    }
+    else if (strcmp(messageFromPC, "GatePin") == 0){
+      gatePin = integerFromPC;
+      if (debug) {
+        Serial.println("gatePin:");
+        Serial.println(gatePin);
+      }
+    }
+    else if (strcmp(messageFromPC, "OutputPin") == 0){
       outputPin = integerFromPC;
       if (debug) {
         Serial.println("outputPin:");
         Serial.println(outputPin);
       }
     }
-    else if (String(messageFromPC).equals("Duration")){
+    else if (strcmp(messageFromPC, "Duration") == 0){
       duration = integerFromPC;
       if (debug) {
         Serial.println("duration");
         Serial.println(duration);
       }
     }
-    else if (String(messageFromPC).equals("Interval")){
+    else if (strcmp(messageFromPC, "Interval") == 0){
       interval = integerFromPC;
       if (debug) {
         Serial.println("interval:");
         Serial.println(interval);
       }
     }
-    else if (String(messageFromPC).equals("StartRunning")){
+    else if (strcmp(messageFromPC, "StartRunning") == 0){
       startRunning = integerFromPC;
       if (debug) {
         Serial.println("startRunning");
@@ -243,8 +400,8 @@ void doStimulation() {
       pinMode(ledPin, OUTPUT);
       pinMode(LED_BUILTIN, OUTPUT);
       calculateCompareTimes(interval, duration);
-      unsigned long start_at = (unsigned long)startTime;// * 1000;
-      unsigned long stop_at = (unsigned long)stopTime;// * 1000;
+      unsigned long start_at = (unsigned long)max(startTime, 0);
+      unsigned long stop_at = (unsigned long)max(stopTime, startTime + 1);
       startCounting(start_at*1000, stop_at*1000);
       interrupts();
     }
