@@ -36,6 +36,7 @@ struct __attribute__((packed)) StimBinaryPayload {
 const uint8_t binaryMagic0 = 0xA5;
 const uint8_t binaryMagic1 = 0x5A;
 const uint8_t binaryProtocolVersion = 1;
+const unsigned long maxTimer1PeriodMs = 4194UL;
 
 int inputPin = 0;
 int gatePin = 0;
@@ -124,8 +125,9 @@ void calculateCompareTimes(uint16_t stimOffTime, uint16_t stimDuration) {
   TCCR1B = 0;
   TCNT1 = 0; // Set Timer1 counter to 0
 
-  unsigned long onTimeMs = max(1, stimDuration);
-  unsigned long totalPeriodMs = max(onTimeMs + 1UL, onTimeMs + stimOffTime);
+  unsigned long onTimeMs = min(maxTimer1PeriodMs - 1, (unsigned long)max(1, stimDuration));
+  unsigned long totalPeriodMs =
+      min(maxTimer1PeriodMs, max(2UL, onTimeMs + stimOffTime));
   uint16_t prescaler = chooseTimer1Prescaler(totalPeriodMs);
 
   // set mode to CTC and choose a prescaler that keeps OCR1A in range

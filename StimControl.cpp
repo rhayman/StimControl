@@ -9,6 +9,7 @@ namespace {
 constexpr int kArduinoResetDelayMs = 2000;
 constexpr uint16_t kMinArduinoPin = 1;
 constexpr uint16_t kMaxArduinoPin = 13;
+constexpr uint16_t kMaxTimer1PeriodMs = 4194;
 } // namespace
 
 StimControl::StimControl()
@@ -305,7 +306,11 @@ void StimControl::sanitizeSettings(StimSettings &settings) const {
       static_cast<uint32_t>(settings.startTime) + static_cast<uint32_t>(1);
   settings.stopTime = static_cast<uint16_t>(
       jmax<uint32_t>(minimumStopTime, static_cast<uint32_t>(settings.stopTime)));
-  settings.stimOnTime = jmax<uint16_t>(1, settings.stimOnTime);
+  settings.stimOnTime =
+      jlimit<uint16_t>(1, kMaxTimer1PeriodMs - 1, settings.stimOnTime);
+  settings.stimOffTime = jmin<uint16_t>(
+      settings.stimOffTime,
+      static_cast<uint16_t>(kMaxTimer1PeriodMs - settings.stimOnTime));
 }
 
 bool StimControl::useBinaryProtocol() const {
