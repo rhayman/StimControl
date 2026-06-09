@@ -4,6 +4,7 @@
 #include <ProcessorHeaders.h>
 #include <SerialLib.h>
 #include <cstdint>
+#include <limits>
 #include <memory>
 
 #if defined(__GNUC__)

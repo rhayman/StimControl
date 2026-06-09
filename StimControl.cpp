@@ -3,6 +3,7 @@
 #include "StimControlEditor.hpp"
 
 #include <stdio.h>
+#include <cstring>
 
 namespace {
 constexpr int kArduinoResetDelayMs = 2000;
@@ -208,11 +209,11 @@ int StimControl::sendStringToDevice(std::string const &str) {
 }
 
 int StimControl::sendBinaryToDevice(StimBinaryPayload const &payload) {
-  auto *buffer = reinterpret_cast<unsigned char const *>(&payload);
+  std::vector<unsigned char> buffer(sizeof(StimBinaryPayload));
+  memcpy(buffer.data(), &payload, sizeof(StimBinaryPayload));
   LOGD("StimControl - sending binary payload to device (", sizeof(payload),
        " bytes)");
-  auto res = serial.writeBytes(const_cast<unsigned char *>(buffer),
-                               sizeof(StimBinaryPayload));
+  auto res = serial.writeBytes(buffer.data(), sizeof(StimBinaryPayload));
   LOGD("StimControl - sent binary payload to device (", res, " bytes)");
   return res;
 }
@@ -295,8 +296,9 @@ void StimControl::sanitizeSettings(StimSettings &settings) const {
   settings.gatePin = jlimit(kMinArduinoPin, kMaxArduinoPin, settings.gatePin);
   settings.outputPin =
       jlimit(kMinArduinoPin, kMaxArduinoPin, settings.outputPin);
-  if (settings.startTime >= 65535) {
-    settings.startTime = 65534;
+  constexpr auto kMaxUint16 = std::numeric_limits<uint16_t>::max();
+  if (settings.startTime >= kMaxUint16) {
+    settings.startTime = kMaxUint16 - 1;
   }
 
   auto minimumStopTime =

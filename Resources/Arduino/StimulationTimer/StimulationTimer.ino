@@ -260,7 +260,7 @@ void trimWhitespace(char * value) {
     char * start = value;
     char * end = value + strlen(value);
 
-    while (end > start && (end[-1] == ' ' || end[-1] == '\t')) {
+    while (end > start && (*(end - 1) == ' ' || *(end - 1) == '\t')) {
         --end;
     }
 
