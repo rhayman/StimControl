@@ -2,8 +2,8 @@
 #include "../../../plugin-GUI/Source/Utils/Utils.h"
 #include "StimControlEditor.hpp"
 
-#include <stdio.h>
 #include <cstring>
+#include <stdio.h>
 
 namespace {
 constexpr int kArduinoResetDelayMs = 2000;
@@ -99,7 +99,7 @@ void StimControl::parameterValueChanged(Parameter *param) {
         this_dev->deviceId = devices[this_dev->name];
         setupDevice();
       } else if (param->getName().equalsIgnoreCase("Protocol")) {
-        this_dev->protocol = (uint16_t)param->getValue();
+        this_dev->protocol = (int)param->getValue();
       } else if (param->getName().equalsIgnoreCase("Trigger")) {
         this_dev->inputPin = (int)param->getValue();
       } else if (param->getName().equalsIgnoreCase("Gate")) {
@@ -281,7 +281,8 @@ void StimControl::printParams(StimSettings settings) {
   LOGD("Stim off duration (ms): ", settings.stimOffTime);
 }
 
-uint16_t StimControl::getUint16ParameterValue(const String &parameterName) const {
+uint16_t
+StimControl::getUint16ParameterValue(const String &parameterName) const {
   auto *parameter = getParameter(parameterName);
   if (parameter == nullptr)
     return 0;
@@ -304,8 +305,8 @@ void StimControl::sanitizeSettings(StimSettings &settings) const {
 
   auto minimumStopTime =
       static_cast<uint32_t>(settings.startTime) + static_cast<uint32_t>(1);
-  settings.stopTime = static_cast<uint16_t>(
-      jmax<uint32_t>(minimumStopTime, static_cast<uint32_t>(settings.stopTime)));
+  settings.stopTime = static_cast<uint16_t>(jmax<uint32_t>(
+      minimumStopTime, static_cast<uint32_t>(settings.stopTime)));
   settings.stimOnTime =
       jlimit<uint16_t>(1, kMaxTimer1PeriodMs - 1, settings.stimOnTime);
   settings.stimOffTime = jmin<uint16_t>(
