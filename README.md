@@ -8,7 +8,8 @@ You need to compile the plugin following the instructions given here:
 
 https://open-ephys.github.io/gui-docs/Developer-Guide/Compiling-plugins.html
 
-You also need to upload the Code in the Arduino/StimulationTimer folder to the Arduino before using the plugin.
+You also need to upload the code in the `Resources/Arduino/StimulationTimer`
+folder to the Arduino before using the plugin.
 
 ## Usage
 
@@ -43,7 +44,7 @@ parameter. The Arduino sketch included in this repository accepts both formats.
 firmware converts this to the timer period internally by adding the pulse
 duration, so the configured pulse width and off-time match the plugin UI.
 
-![](Arduino/StimControl.png)
+![](Resources/Arduino/StimControl.png)
 
 ### Notes
 Trigger and gate pins are transmitted to the Arduino so the protocol is
