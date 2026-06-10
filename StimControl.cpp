@@ -3,6 +3,14 @@
 #include "StimControlEditor.hpp"
 
 #include <stdio.h>
+#include <cstring>
+
+namespace {
+constexpr int kArduinoResetDelayMs = 2000;
+constexpr uint16_t kMinArduinoPin = 1;
+constexpr uint16_t kMaxArduinoPin = 13;
+constexpr uint16_t kMaxTimer1PeriodMs = 4194;
+} // namespace
 
 StimControl::StimControl()
     : GenericProcessor("StimControl"), outputChannel(13), inputChannel(1) {}
@@ -15,6 +23,9 @@ void StimControl::registerParameters() {
     devs.add(dev.first);
   addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "device", "Device name",
                           "Devices available", devs, 0);
+  addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "Protocol", "Protocol",
+                          "How parameters are encoded for Arduino",
+                          stim_protocols, 0);
   addTtlLineParameter(Parameter::STREAM_SCOPE, "Trigger", "Trigger line",
                       "Trigger line on Arduino", arduino_lines.size(), 1);
   addTtlLineParameter(Parameter::STREAM_SCOPE, "Gate", "Gate line",
@@ -35,9 +46,11 @@ void StimControl::registerParameters() {
 }
 
 StimControl::~StimControl() {
-  sendStringToDevice("<StartRunning, 0, >");
-  serial.flush(true, true);
-  serial.close();
+  if (isDeviceInitialized()) {
+    sendData(false);
+    serial.flush(true, true);
+    serial.close();
+  }
 }
 
 void StimControl::process(AudioBuffer<float> &buffer) {}
@@ -46,14 +59,14 @@ bool StimControl::startAcquisition() {
   if (!isDeviceInitialized()) {
     setupDevice();
   }
-  sendData();
+  sendData((bool)getParameter("Apply")->getValue());
   serial.flush(true, true);
   LOGD("StimControl - Acquisition started");
   return true;
 }
 
 bool StimControl::stopAcquisition() {
-  sendStringToDevice("<StartRunning, 0, >");
+  sendData(false);
   serial.flush(true, true);
   return true;
 }
@@ -62,13 +75,13 @@ void StimControl::startRecording() {
   if (!isDeviceInitialized()) {
     setupDevice();
   }
-  sendData();
+  sendData((bool)getParameter("Apply")->getValue());
   LOGD("StimControl - Recording started");
   serial.flush(true, true);
 }
 
 void StimControl::stopRecording() {
-  sendStringToDevice("<StartRunning, 0, >");
+  sendData(false);
   serial.flush(true, true);
 }
 
@@ -85,29 +98,22 @@ void StimControl::parameterValueChanged(Parameter *param) {
         getDeviceList(devices);
         this_dev->deviceId = devices[this_dev->name];
         setupDevice();
+      } else if (param->getName().equalsIgnoreCase("Protocol")) {
+        this_dev->protocol = (uint16_t)param->getValue();
       } else if (param->getName().equalsIgnoreCase("Trigger")) {
         this_dev->inputPin = (int)param->getValue();
-        //   this_dev->inputPin = ((CategoricalParameter *)(param))
-        //                            ->getSelectedString()
-        //                            .getIntValue();
       } else if (param->getName().equalsIgnoreCase("Gate")) {
         this_dev->gatePin = (int)param->getValue();
-        //   // this_dev->name =
-        //   //
-        //   ((CategoricalParameter*)(param))->getSelectedString().toStdString();
       } else if (param->getName().equalsIgnoreCase("Output")) {
         this_dev->outputPin = (int)param->getValue();
-        //   this_dev->outputPin = ((CategoricalParameter *)(param))
-        //                             ->getSelectedString()
-        //                             .getIntValue();
       } else if (param->getName().equalsIgnoreCase("Start")) {
-        this_dev->startTime = (int)param->getValue();
+        this_dev->startTime = getUint16ParameterValue("Start");
       } else if (param->getName().equalsIgnoreCase("Stop")) {
-        this_dev->stopTime = (int)param->getValue();
+        this_dev->stopTime = getUint16ParameterValue("Stop");
       } else if (param->getName().equalsIgnoreCase("Duration")) {
-        this_dev->stimOnTime = (int)param->getValue();
+        this_dev->stimOnTime = getUint16ParameterValue("Duration");
       } else if (param->getName().equalsIgnoreCase("Interval")) {
-        this_dev->stimOffTime = (int)param->getValue();
+        this_dev->stimOffTime = getUint16ParameterValue("Interval");
       }
     }
   }
@@ -146,55 +152,51 @@ StimSettings StimControl::getSettings() {
       auto this_dev = settings[stream->getStreamId()];
       current_settings.hasData = 1;
       current_settings.inputPin = this_dev->inputPin;
+      current_settings.gatePin = this_dev->gatePin;
       current_settings.outputPin = this_dev->outputPin;
-      current_settings.startTime = (int)getParameter("Start")->getValue();
-      current_settings.stopTime = (int)getParameter("Stop")->getValue();
-      current_settings.stimOffTime = (int)getParameter("Interval")->getValue();
-      current_settings.stimOnTime = (int)getParameter("Duration")->getValue();
+      current_settings.startTime = getUint16ParameterValue("Start");
+      current_settings.stopTime = getUint16ParameterValue("Stop");
+      current_settings.stimOffTime = getUint16ParameterValue("Interval");
+      current_settings.stimOnTime = getUint16ParameterValue("Duration");
     }
   }
+  sanitizeSettings(current_settings);
   LOGD("StimControl - getting Settings");
   return current_settings;
 }
 
-void StimControl::sendData() {
+void StimControl::sendData(bool startRunning) {
   if (!isDeviceInitialized())
     setupDevice();
+  if (!isDeviceInitialized())
+    return;
   CoreServices::sendStatusMessage("Sending data");
   StimSettings s = getSettings();
   printParams(s);
   LOGD("StimControl - sending data to device");
-  int bytes_sent =
-      sendStringToDevice("<Start," + std::to_string(s.startTime) + ",>");
-  //   bool debug = false;
-  // #if defined(DEBUG)
-  //   debug = true;
-  // #endif
-  //   if (debug)
-  //     LOGD("Bytes sent for startTime: ", bytes_sent);
-  //   bytes_sent = sendStringToDevice("<Stop," + std::to_string(s.stopTime) +
-  //   ",>"); if (debug)
-  //     LOGD("Bytes sent for stopTime: ", bytes_sent);
-  //   bytes_sent =
-  //       sendStringToDevice("<OutputPin," + std::to_string(s.outputPin) +
-  //       ",>");
-  //   if (debug)
-  //     LOGD("Bytes sent for outputPin: ", bytes_sent);
-  //   bytes_sent =
-  //       sendStringToDevice("<Duration," + std::to_string(s.stimOnTime) +
-  //       ",>");
-  //   if (debug)
-  //     LOGD("Bytes sent for duration: ", bytes_sent);
-  //   bytes_sent =
-  //       sendStringToDevice("<Interval," + std::to_string(s.stimOffTime) +
-  //       ",>");
-  //   if (debug)
-  //     LOGD("Bytes sent for interval: ", bytes_sent);
-  auto startRunning = (bool)getParameter("Apply")->getValue();
-  bytes_sent = sendStringToDevice("<StartRunning," +
-                                  std::to_string(startRunning) + ",>");
-  // if (debug)
-  //   LOGD("Bytes sent for startRunning: ", bytes_sent);
+  if (useBinaryProtocol()) {
+    StimBinaryPayload payload;
+    payload.payloadSize = sizeof(StimBinaryPayload);
+    payload.inputPin = s.inputPin;
+    payload.gatePin = s.gatePin;
+    payload.outputPin = s.outputPin;
+    payload.startTime = s.startTime;
+    payload.stopTime = s.stopTime;
+    payload.stimOnTime = s.stimOnTime;
+    payload.stimOffTime = s.stimOffTime;
+    payload.hasData = s.hasData;
+    payload.startRunning = startRunning ? 1 : 0;
+    sendBinaryToDevice(payload);
+  } else {
+    sendStringToDevice("<InputPin," + std::to_string(s.inputPin) + ",>");
+    sendStringToDevice("<GatePin," + std::to_string(s.gatePin) + ",>");
+    sendStringToDevice("<OutputPin," + std::to_string(s.outputPin) + ",>");
+    sendStringToDevice("<Start," + std::to_string(s.startTime) + ",>");
+    sendStringToDevice("<Stop," + std::to_string(s.stopTime) + ",>");
+    sendStringToDevice("<Duration," + std::to_string(s.stimOnTime) + ",>");
+    sendStringToDevice("<Interval," + std::to_string(s.stimOffTime) + ",>");
+    sendStringToDevice("<StartRunning," + std::to_string(startRunning) + ",>");
+  }
   LOGD("StimControl - data sent to device");
   CoreServices::sendStatusMessage("Data sent");
 }
@@ -204,6 +206,16 @@ int StimControl::sendStringToDevice(std::string const &str) {
   LOGD("StimControl - sending string to device: ", str);
   auto res = serial.writeBytes(buffer.data(), buffer.size());
   LOGD("StimControl - sent string to device: ", str, " (", res, " bytes)");
+  return res;
+}
+
+int StimControl::sendBinaryToDevice(StimBinaryPayload const &payload) {
+  std::vector<unsigned char> buffer(sizeof(StimBinaryPayload));
+  memcpy(buffer.data(), &payload, sizeof(StimBinaryPayload));
+  LOGD("StimControl - sending binary payload to device (", sizeof(payload),
+       " bytes)");
+  auto res = serial.writeBytes(buffer.data(), sizeof(StimBinaryPayload));
+  LOGD("StimControl - sent binary payload to device (", res, " bytes)");
   return res;
 }
 
@@ -218,11 +230,14 @@ void StimControl::setupDevice() {
       auto selected = this_dev->deviceId;
       if (selected >= 0) {
         CoreServices::sendStatusMessage("Initializing device...");
+        serial.close();
         bool success = serial.setup(selected, baudrate);
         deviceInitialized(success);
-        if (success)
+        if (success) {
+          Thread::sleep(kArduinoResetDelayMs);
+          serial.flush(true, true);
           CoreServices::sendStatusMessage("Device successfully initialized");
-        else
+        } else
           CoreServices::sendStatusMessage("Device not initialized");
       } else
         CoreServices::sendStatusMessage("Select a device first.");
@@ -231,11 +246,14 @@ void StimControl::setupDevice() {
 }
 
 void StimControl::setupDevice(std::string devId) {
+  serial.close();
   bool success = serial.setup(devId, baudrate);
   deviceInitialized(success);
-  if (success)
+  if (success) {
+    Thread::sleep(kArduinoResetDelayMs);
+    serial.flush(true, true);
     CoreServices::sendStatusMessage("Device successfully initialized");
-  else
+  } else
     CoreServices::sendStatusMessage("Device not initialized");
 }
 
@@ -255,9 +273,47 @@ void StimControl::closeDevice() { serial.close(); }
 void StimControl::printParams(StimSettings settings) {
   LOGD("Has data: ", settings.hasData);
   LOGD("Input pin: ", settings.inputPin);
+  LOGD("Gate pin: ", settings.gatePin);
   LOGD("Output pin: ", settings.outputPin);
   LOGD("Start time (s): ", settings.startTime);
   LOGD("Stop time (s): ", settings.stopTime);
   LOGD("Stim on duration (ms): ", settings.stimOnTime);
   LOGD("Stim off duration (ms): ", settings.stimOffTime);
+}
+
+uint16_t StimControl::getUint16ParameterValue(const String &parameterName) const {
+  auto *parameter = getParameter(parameterName);
+  if (parameter == nullptr)
+    return 0;
+
+  auto valueString = parameter->getValueAsString().trim();
+  auto value = valueString.getIntValue();
+
+  return static_cast<uint16_t>(jlimit(0, 65535, value));
+}
+
+void StimControl::sanitizeSettings(StimSettings &settings) const {
+  settings.inputPin = jlimit(kMinArduinoPin, kMaxArduinoPin, settings.inputPin);
+  settings.gatePin = jlimit(kMinArduinoPin, kMaxArduinoPin, settings.gatePin);
+  settings.outputPin =
+      jlimit(kMinArduinoPin, kMaxArduinoPin, settings.outputPin);
+  constexpr auto kMaxUint16 = std::numeric_limits<uint16_t>::max();
+  if (settings.startTime >= kMaxUint16) {
+    settings.startTime = kMaxUint16 - 1;
+  }
+
+  auto minimumStopTime =
+      static_cast<uint32_t>(settings.startTime) + static_cast<uint32_t>(1);
+  settings.stopTime = static_cast<uint16_t>(
+      jmax<uint32_t>(minimumStopTime, static_cast<uint32_t>(settings.stopTime)));
+  settings.stimOnTime =
+      jlimit<uint16_t>(1, kMaxTimer1PeriodMs - 1, settings.stimOnTime);
+  settings.stimOffTime = jmin<uint16_t>(
+      settings.stimOffTime,
+      static_cast<uint16_t>(kMaxTimer1PeriodMs - settings.stimOnTime));
+}
+
+bool StimControl::useBinaryProtocol() const {
+  auto *parameter = getParameter("Protocol");
+  return parameter != nullptr && int(parameter->getValue()) == 1;
 }
