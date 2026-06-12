@@ -3,7 +3,6 @@
 #include "StimControlEditor.hpp"
 
 #include <cstring>
-#include <stdio.h>
 
 namespace {
 constexpr int kArduinoResetDelayMs = 2000;
@@ -36,13 +35,13 @@ void StimControl::registerParameters() {
                      "Start time", "0");
   addStringParameter(Parameter::PROCESSOR_SCOPE, "Stop", "Stop time (s)",
                      "Stop time", "2000");
-  addStringParameter(Parameter::PROCESSOR_SCOPE, "Duration",
-                     "Stimulation duration (ms)", "Stim duration", "10");
+  addStringParameter(Parameter::PROCESSOR_SCOPE, "Duration", "Stim width(ms)",
+                     "Stim duration", "10");
   addStringParameter(Parameter::PROCESSOR_SCOPE, "Interval",
                      "Interval duration(ms)", "interval duration", "150");
   addBooleanParameter(Parameter::PROCESSOR_SCOPE, "Apply", "",
                       "apply during recording", true);
-  // parameterValueChanged(getParameter("Device"));
+  parameterValueChanged(getParameter("Device"));
 }
 
 StimControl::~StimControl() {
