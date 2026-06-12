@@ -41,7 +41,7 @@ void StimControl::registerParameters() {
                      "Interval duration(ms)", "interval duration", "150");
   addBooleanParameter(Parameter::PROCESSOR_SCOPE, "Apply", "",
                       "apply during recording", true);
-  parameterValueChanged(getParameter("Device"));
+  setupDevice();
 }
 
 StimControl::~StimControl() {
