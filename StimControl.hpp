@@ -10,7 +10,7 @@
 #if defined(__GNUC__)
 #define PACK(__Declaration__) __Declaration__ __attribute__((__packed__))
 #elif defined(_MSC_VER)
-#define PACK(__Declaration__)                                                 \
+#define PACK(__Declaration__)                                                  \
   __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
 #else
 #define PACK(__Declaration__) __Declaration__
@@ -47,8 +47,7 @@ PACK(struct StimBinaryPayload {
 
 auto const arduino_lines = Array<String>{"1", "2", "3",  "4",  "5",  "6", "7",
                                          "8", "9", "10", "11", "12", "13"};
-auto const stim_protocols =
-    Array<String>{"String commands", "Packed struct"};
+auto const stim_protocols = Array<String>{"String commands", "Packed struct"};
 
 class StimControlSettings {
 public:
@@ -105,6 +104,9 @@ public:
   std::string getDeviceString();
   void closeDevice();
   void printParams(StimSettings);
+
+  void saveCustomParametersToXml(XmlElement *xml) override;
+  void loadCustomParametersFromXml(XmlElement *xml) override;
 
 private:
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StimControl);

@@ -12,7 +12,9 @@ constexpr uint16_t kMaxTimer1PeriodMs = 4194;
 } // namespace
 
 StimControl::StimControl()
-    : GenericProcessor("StimControl"), outputChannel(13), inputChannel(1) {}
+    : GenericProcessor("StimControl"), outputChannel(13), inputChannel(1) {
+  // TODO: Maybe do initialisation here of the first added COM device
+}
 
 void StimControl::registerParameters() {
   std::map<std::string, int> devices;
@@ -20,6 +22,7 @@ void StimControl::registerParameters() {
   Array<String> devs;
   for (auto dev : devices)
     devs.add(dev.first);
+  // TODO: init deviceId etc here? how to check its valid?
   addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "device", "Device name",
                           "Devices available", devs, 0);
   addCategoricalParameter(Parameter::PROCESSOR_SCOPE, "Protocol", "Protocol",
@@ -316,4 +319,17 @@ void StimControl::sanitizeSettings(StimSettings &settings) const {
 bool StimControl::useBinaryProtocol() const {
   auto *parameter = getParameter("Protocol");
   return parameter != nullptr && int(parameter->getValue()) == 1;
+}
+
+void StimControl::saveCustomParametersToXml(XmlElement *xml) {
+  auto *p = getParameter("Output");
+  xml->setAttribute("Output", p->getValue());
+
+  p = getParameter("device");
+  xml->setAttribute("device", p->getValue());
+}
+
+void StimControl::loadCustomParametersFromXml(XmlElement *xml) {
+  int output = xml->getIntAttribute("Output", 0);
+  String device = xml->getStringAttribute("device", "");
 }
