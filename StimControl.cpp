@@ -323,10 +323,10 @@ bool StimControl::useBinaryProtocol() const {
 
 void StimControl::saveCustomParametersToXml(XmlElement *xml) {
   auto *p = getParameter("Output");
-  xml->setAttribute("Output", p->getValue());
+  xml->setAttribute("Output", (int)p->getValue());
 
   p = getParameter("device");
-  xml->setAttribute("device", p->getValue());
+  xml->setAttribute("device", (int)p->getValue());
 }
 
 void StimControl::loadCustomParametersFromXml(XmlElement *xml) {
